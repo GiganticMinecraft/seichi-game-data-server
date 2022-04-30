@@ -1,0 +1,2 @@
+# SeichiGameAPI
+整地鯖のゲームDBに対して直接R/Wする必要があるデータをgRPCで露出するAPIサーバー。
