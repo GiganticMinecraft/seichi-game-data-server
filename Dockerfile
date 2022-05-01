@@ -27,6 +27,6 @@ COPY --link . .
 RUN cargo build --release
 
 FROM gcr.io/distroless/cc
-LABEL org.opencontainers.image.source=https://github.com/GiganticMinecraft/SeichiRankingBFF
-COPY --from=build-env --link /app/target/release/seichi-ranking-bff /
-CMD ["./seichi-ranking-bff"]
+LABEL org.opencontainers.image.source=https://github.com/GiganticMinecraft/seichi-game-api
+COPY --from=build-env --link /app/target/release/seichi-game-api /
+CMD ["./seichi-game-api"]
