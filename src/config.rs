@@ -74,6 +74,7 @@ mod test {
             ("HTTP_HOST".to_string(), "127.0.0.1".to_string()),
             ("DB_HOST".to_string(), "example.com".to_string()),
             ("DB_PORT".to_string(), "3307".to_string()),
+            ("DB_DATABASE_NAME".to_string(), "db".to_string()),
             ("DB_USER".to_string(), "bff".to_string()),
             ("DB_PASSWORD".to_string(), "$tr0ngpAssw0rd".to_string()),
         ];
