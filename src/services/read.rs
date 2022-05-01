@@ -91,23 +91,23 @@ fn to_tonic_error_status(anyhow_error: anyhow::Error) -> tonic::Status {
     Status::unknown("Unknown error. See the server log for more details.")
 }
 
-pub struct ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountsDS> {
+pub struct ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS> {
     pub last_quit_data_source: LastQuitDS,
     pub break_counts_data_source: BreakCountDS,
     pub build_counts_data_source: BuildCountDS,
     pub play_ticks_data_source: PlayTicksDS,
-    pub vote_counts_data_source: VoteCountsDS,
+    pub vote_counts_data_source: VoteCountDS,
 }
 
 #[tonic::async_trait]
-impl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountsDS> ReadService
-    for ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountsDS>
+impl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS> ReadService
+    for ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS>
 where
     LastQuitDS: VecDataSource<PlayerLastQuit> + Send + Sync + 'static,
     BreakCountDS: VecDataSource<PlayerBreakCount> + Send + Sync + 'static,
     BuildCountDS: VecDataSource<PlayerBuildCount> + Send + Sync + 'static,
     PlayTicksDS: VecDataSource<PlayerPlayTicks> + Send + Sync + 'static,
-    VoteCountsDS: VecDataSource<PlayerVoteCount> + Send + Sync + 'static,
+    VoteCountDS: VecDataSource<PlayerVoteCount> + Send + Sync + 'static,
 {
     async fn last_quits(
         &self,
