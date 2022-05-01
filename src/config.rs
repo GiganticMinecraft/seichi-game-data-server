@@ -36,6 +36,7 @@ impl FromEnvLikeKeyValuePairs for Config {
 pub struct SourceDatabaseConfig {
     pub host: String,
     pub port: Port,
+    pub database_name: String,
     pub user: String,
     pub password: String,
 }
