@@ -19,28 +19,28 @@ impl<T: FromEnvLikeKeyValuePairs> FromEnv for T {
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub database_authorization: DatabaseAuthorizationInfo,
+    pub source_database_config: SourceDatabaseConfig,
     pub http_config: HttpConfig,
 }
 
 impl FromEnvLikeKeyValuePairs for Config {
     fn from_iter(iter: impl Iterator<Item = (String, String)> + Clone) -> Result<Self, Error> {
         Ok(Self {
-            database_authorization: DatabaseAuthorizationInfo::from_iter(iter.clone())?,
+            source_database_config: SourceDatabaseConfig::from_iter(iter.clone())?,
             http_config: HttpConfig::from_iter(iter)?,
         })
     }
 }
 
 #[derive(Deserialize, Debug)]
-pub struct DatabaseAuthorizationInfo {
+pub struct SourceDatabaseConfig {
     pub host: String,
     pub port: Port,
     pub user: String,
     pub password: String,
 }
 
-impl FromEnvLikeKeyValuePairs for DatabaseAuthorizationInfo {
+impl FromEnvLikeKeyValuePairs for SourceDatabaseConfig {
     fn from_iter(iter: impl Iterator<Item = (String, String)>) -> Result<Self, Error> {
         envy::prefixed("DB_").from_iter(iter)
     }
