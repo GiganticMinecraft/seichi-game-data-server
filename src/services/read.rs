@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use crate::app_models::VecDataSource;
 use crate::gigantic_minecraft::game_data;
 use crate::gigantic_minecraft::game_data::v1::read_service_server::ReadService;
@@ -10,6 +9,7 @@ use crate::gigantic_minecraft::game_data::v1::{
 use crate::models::{
     Player, PlayerBreakCount, PlayerBuildCount, PlayerLastQuit, PlayerPlayTicks, PlayerVoteCount,
 };
+use async_trait::async_trait;
 
 fn to_tonic_player(model: Player) -> game_data::v1::Player {
     game_data::v1::Player {
