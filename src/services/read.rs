@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crate::app_models::VecDataSource;
 use crate::gigantic_minecraft::game_data;
 use crate::gigantic_minecraft::game_data::v1::read_service_server::ReadService;
@@ -99,7 +100,7 @@ pub struct ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, 
     pub vote_counts_data_source: VoteCountDS,
 }
 
-#[tonic::async_trait]
+#[async_trait]
 impl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS> ReadService
     for ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS>
 where
