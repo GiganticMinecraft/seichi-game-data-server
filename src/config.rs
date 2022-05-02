@@ -19,28 +19,29 @@ impl<T: FromEnvLikeKeyValuePairs> FromEnv for T {
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub database_authorization: DatabaseAuthorizationInfo,
+    pub source_database_config: SourceDatabaseConfig,
     pub http_config: HttpConfig,
 }
 
 impl FromEnvLikeKeyValuePairs for Config {
     fn from_iter(iter: impl Iterator<Item = (String, String)> + Clone) -> Result<Self, Error> {
         Ok(Self {
-            database_authorization: DatabaseAuthorizationInfo::from_iter(iter.clone())?,
+            source_database_config: SourceDatabaseConfig::from_iter(iter.clone())?,
             http_config: HttpConfig::from_iter(iter)?,
         })
     }
 }
 
 #[derive(Deserialize, Debug)]
-pub struct DatabaseAuthorizationInfo {
+pub struct SourceDatabaseConfig {
     pub host: String,
     pub port: Port,
+    pub database_name: String,
     pub user: String,
     pub password: String,
 }
 
-impl FromEnvLikeKeyValuePairs for DatabaseAuthorizationInfo {
+impl FromEnvLikeKeyValuePairs for SourceDatabaseConfig {
     fn from_iter(iter: impl Iterator<Item = (String, String)>) -> Result<Self, Error> {
         envy::prefixed("DB_").from_iter(iter)
     }
@@ -73,6 +74,7 @@ mod test {
             ("HTTP_HOST".to_string(), "127.0.0.1".to_string()),
             ("DB_HOST".to_string(), "example.com".to_string()),
             ("DB_PORT".to_string(), "3307".to_string()),
+            ("DB_DATABASE_NAME".to_string(), "db".to_string()),
             ("DB_USER".to_string(), "bff".to_string()),
             ("DB_PASSWORD".to_string(), "$tr0ngpAssw0rd".to_string()),
         ];

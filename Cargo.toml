@@ -5,9 +5,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
+async-trait = "0.1.53"
+chrono = "0.4.19"
 envy = "0.4.2"
+log = "0.4.16"
 pbjson-types = "0.3.0"
 prost = "0.10.1"
 serde = "1.0.137"
+sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
 tokio = { version = "1.18.0", features = ["rt-multi-thread"] }
 tonic = { version = "0.7.1", features = ["compression"] }
