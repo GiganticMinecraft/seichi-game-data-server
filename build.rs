@@ -7,7 +7,7 @@ use std::process::{exit, Command};
 fn main() -> Result<(), Box<dyn Error>> {
     let status = Command::new("buf")
         .arg("generate")
-        .arg("buf.build/gigantic-minecraft/game-data")
+        .arg("buf.build/gigantic-minecraft/seichi-game-data")
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .status()
         .unwrap();

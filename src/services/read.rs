@@ -1,7 +1,7 @@
 use crate::app_models::VecDataSource;
-use crate::gigantic_minecraft::game_data;
-use crate::gigantic_minecraft::game_data::v2::read_service_server::ReadService;
-use crate::gigantic_minecraft::game_data::v2::{
+use crate::gigantic_minecraft::seichi_game_data;
+use crate::gigantic_minecraft::seichi_game_data::v1::read_service_server::ReadService;
+use crate::gigantic_minecraft::seichi_game_data::v1::{
     BreakCountsResponse, BuildCountsResponse, LastQuitsResponse, PlayTicksResponse,
     VoteCountsResponse,
 };
@@ -10,8 +10,8 @@ use crate::models::{
 };
 use async_trait::async_trait;
 
-fn to_tonic_player(model: Player) -> game_data::v2::Player {
-    game_data::v2::Player {
+fn to_tonic_player(model: Player) -> seichi_game_data::v1::Player {
+    seichi_game_data::v1::Player {
         uuid: model.uuid,
         last_known_name: model.last_known_name,
     }
@@ -21,7 +21,7 @@ fn to_tonic_last_quit_response(model: Vec<PlayerLastQuit>) -> tonic::Response<La
     tonic::Response::new(LastQuitsResponse {
         results: model
             .into_iter()
-            .map(|last_quit| game_data::v2::PlayerLastQuit {
+            .map(|last_quit| seichi_game_data::v1::PlayerLastQuit {
                 player: Some(to_tonic_player(last_quit.player)),
                 rfc_3339_date_time: last_quit.rfc_3339_date_time,
             })
@@ -35,7 +35,7 @@ fn to_tonic_break_counts_response(
     tonic::Response::new(BreakCountsResponse {
         results: model
             .into_iter()
-            .map(|break_count| game_data::v2::PlayerBreakCount {
+            .map(|break_count| seichi_game_data::v1::PlayerBreakCount {
                 player: Some(to_tonic_player(break_count.player)),
                 break_count: break_count.break_count,
             })
@@ -49,7 +49,7 @@ fn to_tonic_build_counts_response(
     tonic::Response::new(BuildCountsResponse {
         results: model
             .into_iter()
-            .map(|build_count| game_data::v2::PlayerBuildCount {
+            .map(|build_count| seichi_game_data::v1::PlayerBuildCount {
                 player: Some(to_tonic_player(build_count.player)),
                 build_count: build_count.build_count,
             })
@@ -61,7 +61,7 @@ fn to_tonic_play_ticks_response(model: Vec<PlayerPlayTicks>) -> tonic::Response<
     tonic::Response::new(PlayTicksResponse {
         results: model
             .into_iter()
-            .map(|play_ticks| game_data::v2::PlayerPlayTicks {
+            .map(|play_ticks| seichi_game_data::v1::PlayerPlayTicks {
                 player: Some(to_tonic_player(play_ticks.player)),
                 play_ticks: play_ticks.play_ticks,
             })
@@ -75,7 +75,7 @@ fn to_tonic_vote_counts_response(
     tonic::Response::new(VoteCountsResponse {
         results: model
             .into_iter()
-            .map(|vote_count| game_data::v2::PlayerVoteCount {
+            .map(|vote_count| seichi_game_data::v1::PlayerVoteCount {
                 player: Some(to_tonic_player(vote_count.player)),
                 vote_count: vote_count.vote_count,
             })

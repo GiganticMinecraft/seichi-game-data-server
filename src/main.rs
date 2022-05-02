@@ -4,7 +4,7 @@
 
 use seichi_game_api::config::{Config, FromEnv, SourceDatabaseConfig};
 use seichi_game_api::data_sources;
-use seichi_game_api::gigantic_minecraft::game_data::v2::read_service_server::{
+use seichi_game_api::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
     ReadService, ReadServiceServer,
 };
 use seichi_game_api::services::read::ReadServiceImpl;
