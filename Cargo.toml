@@ -14,4 +14,4 @@ prost = "0.10.1"
 serde = "1.0.137"
 sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
 tokio = { version = "1.18.1", features = ["rt-multi-thread"] }
-tonic = { version = "0.7.1", features = ["compression"] }
+tonic = { version = "0.7.2", features = ["compression"] }
