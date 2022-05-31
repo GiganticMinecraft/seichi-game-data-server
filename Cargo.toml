@@ -10,7 +10,7 @@ chrono = "0.4.19"
 envy = "0.4.2"
 log = "0.4.17"
 pbjson-types = "0.3.2"
-prost = "0.10.3"
+prost = "0.10.4"
 serde = "1.0.137"
 sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
 tokio = { version = "1.18.2", features = ["rt-multi-thread"] }
