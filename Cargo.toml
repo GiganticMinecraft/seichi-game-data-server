@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.57"
-async-trait = "0.1.53"
+async-trait = "0.1.56"
 chrono = "0.4.19"
 envy = "0.4.2"
 log = "0.4.17"
