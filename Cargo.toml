@@ -12,6 +12,6 @@ log = "0.4.17"
 pbjson-types = "0.3.2"
 prost = "0.10.4"
 serde = "1.0.137"
-sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
+sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
 tokio = { version = "1.19.2", features = ["rt-multi-thread"] }
 tonic = { version = "0.7.2", features = ["compression"] }
