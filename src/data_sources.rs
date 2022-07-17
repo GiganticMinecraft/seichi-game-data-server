@@ -36,20 +36,18 @@ struct MySqlDataSource {
 // https://github.com/GiganticMinecraft/SeichiAssist/blob/2994a7269edb0427bd9d59c8ec822742638609c2/src/main/resources/db/migration/V1.0.0__Create_static_tables_and_columns.sql
 // を参照されたい。
 
-impl <'r> FromRow<'r, MySqlRow> for PlayerLastQuit {
+impl<'r> FromRow<'r, MySqlRow> for PlayerLastQuit {
     fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(
-            PlayerLastQuit {
-                player: Player {
-                    // varchar(128) -> String
-                    uuid: row.try_get("uuid")?,
-                    // varchar(30) -> String
-                    last_known_name: row.try_get("name")?,
-                },
-                // datetime -> String
-                rfc_3339_date_time: row.try_get::<DateTime<Utc>, _>("lastquit")?.to_rfc3339(),
-            }
-        )
+        Ok(PlayerLastQuit {
+            player: Player {
+                // varchar(128) -> String
+                uuid: row.try_get("uuid")?,
+                // varchar(30) -> String
+                last_known_name: row.try_get("name")?,
+            },
+            // datetime -> String
+            rfc_3339_date_time: row.try_get::<DateTime<Utc>, _>("lastquit")?.to_rfc3339(),
+        })
     }
 }
 
@@ -63,20 +61,18 @@ impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
     }
 }
 
-impl <'r> FromRow<'r, MySqlRow> for PlayerBreakCount {
+impl<'r> FromRow<'r, MySqlRow> for PlayerBreakCount {
     fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(
-            PlayerBreakCount {
-                player: Player {
-                    // varchar(128) -> String
-                    uuid: row.try_get("uuid")?,
-                    // varchar(30) -> String
-                    last_known_name: row.try_get("name")?,
-                },
-                // bigint -> String
-                break_count: row.try_get("totalbreaknum")?,
-            }
-        )
+        Ok(PlayerBreakCount {
+            player: Player {
+                // varchar(128) -> String
+                uuid: row.try_get("uuid")?,
+                // varchar(30) -> String
+                last_known_name: row.try_get("name")?,
+            },
+            // bigint -> String
+            break_count: row.try_get("totalbreaknum")?,
+        })
     }
 }
 
@@ -90,20 +86,18 @@ impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
     }
 }
 
-impl <'r> FromRow<'r, MySqlRow> for PlayerBuildCount {
+impl<'r> FromRow<'r, MySqlRow> for PlayerBuildCount {
     fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(
-            PlayerBuildCount {
-                player: Player {
-                    // varchar(128) -> String
-                    uuid: row.try_get("uuid")?,
-                    // varchar(30) -> String
-                    last_known_name: row.try_get("name")?,
-                },
-                // double -> u64
-                build_count: row.try_get::<f64, _>("build_count")?.round() as u64,
-            }
-        )
+        Ok(PlayerBuildCount {
+            player: Player {
+                // varchar(128) -> String
+                uuid: row.try_get("uuid")?,
+                // varchar(30) -> String
+                last_known_name: row.try_get("name")?,
+            },
+            // double -> u64
+            build_count: row.try_get::<f64, _>("build_count")?.round() as u64,
+        })
     }
 }
 
@@ -117,20 +111,18 @@ impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
     }
 }
 
-impl <'r> FromRow<'r, MySqlRow> for PlayerPlayTicks {
+impl<'r> FromRow<'r, MySqlRow> for PlayerPlayTicks {
     fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(
-            PlayerPlayTicks {
-                player: Player {
-                    // varchar(128) -> String
-                    uuid: row.try_get("uuid")?,
-                    // varchar(30) -> String
-                    last_known_name: row.try_get("name")?,
-                },
-                // i32 -> u64
-                play_ticks: row.try_get::<i32, _>("playtick")? as u64,
-            }
-        )
+        Ok(PlayerPlayTicks {
+            player: Player {
+                // varchar(128) -> String
+                uuid: row.try_get("uuid")?,
+                // varchar(30) -> String
+                last_known_name: row.try_get("name")?,
+            },
+            // i32 -> u64
+            play_ticks: row.try_get::<i32, _>("playtick")? as u64,
+        })
     }
 }
 
@@ -144,20 +136,18 @@ impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
     }
 }
 
-impl <'r> FromRow<'r, MySqlRow> for PlayerVoteCount {
+impl<'r> FromRow<'r, MySqlRow> for PlayerVoteCount {
     fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(
-            PlayerVoteCount {
-                player: Player {
-                    // varchar(128) -> String
-                    uuid: row.try_get("uuid")?,
-                    // varchar(30) -> String
-                    last_known_name: row.try_get("name")?,
-                },
-                // i32 -> u64
-                vote_count: row.try_get::<i32, _>("p_vote")? as u64,
-            }
-        )
+        Ok(PlayerVoteCount {
+            player: Player {
+                // varchar(128) -> String
+                uuid: row.try_get("uuid")?,
+                // varchar(30) -> String
+                last_known_name: row.try_get("name")?,
+            },
+            // i32 -> u64
+            vote_count: row.try_get::<i32, _>("p_vote")? as u64,
+        })
     }
 }
 
@@ -170,7 +160,6 @@ impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
             .map_err(|e| anyhow!(e))
     }
 }
-
 
 pub async fn last_quit_data_source(
     config: &SourceDatabaseConfig,
