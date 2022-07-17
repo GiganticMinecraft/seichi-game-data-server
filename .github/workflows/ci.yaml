@@ -5,7 +5,7 @@ on:
       - '**.md'
 
 env:
-  IMAGE: ghcr.io/giganticminecraft/seichi-game-api
+  IMAGE: ghcr.io/giganticminecraft/seichi-game-data-server
 
 jobs:
   lint-and-test:
