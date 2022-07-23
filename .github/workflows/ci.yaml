@@ -8,7 +8,7 @@ env:
   IMAGE: ghcr.io/giganticminecraft/seichi-game-data-server
 
 jobs:
-  lint-and-test:
+  app-lint-and-test:
     name: Lint and test application
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +27,7 @@ jobs:
       # https://github.com/Swatinem/rust-cache/tree/cb2cf0cc7c5198d3364b9630e2c3d457f160790c#example-usage
       - uses: Swatinem/rust-cache@v1
         with:
-          key: v1
+          working-directory: app
 
       # buf CLIがビルドに必要
       - uses: bufbuild/buf-setup-action@v1
@@ -38,22 +38,23 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all -- --check
+          args: --manifest-path app/Cargo.toml --all -- --check
 
       - name: Cargo clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
+          args: --manifest-path app/Cargo.toml
 
       - name: Cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features
+          args: --manifest-path app/Cargo.toml --all-features
 
   build-image:
     name: Build docker image (and publish on master)
-    needs: [lint-and-test]
+    needs: [ app-lint-and-test ]
     runs-on: ubuntu-20.04
     steps:
       - name: checkout
