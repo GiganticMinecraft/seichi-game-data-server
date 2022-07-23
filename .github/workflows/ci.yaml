@@ -18,8 +18,9 @@ jobs:
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
-          components: rustfmt, clippy
+          # TODO: read from rust-toolchain.toml
+          toolchain: "1.62.1"
+          profile: "default"
 
       # > selecting a toolchain either by action or manual `rustup` calls should happen
       # > before the plugin, as it uses the current rustc version as its cache key
