@@ -27,7 +27,7 @@ jobs:
       # https://github.com/Swatinem/rust-cache/tree/cb2cf0cc7c5198d3364b9630e2c3d457f160790c#example-usage
       - uses: Swatinem/rust-cache@v1
         with:
-          working-directory: server/app
+          working-directory: server
 
       # buf CLIがビルドに必要
       - uses: bufbuild/buf-setup-action@v1
