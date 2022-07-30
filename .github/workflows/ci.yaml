@@ -38,19 +38,19 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --manifest-path server/app/Cargo.toml --all -- --check
+          args: --manifest-path server/Cargo.toml --all -- --check
 
       - name: Cargo clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path server/app/Cargo.toml
+          args: --manifest-path server/Cargo.toml
 
       - name: Cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --manifest-path server/app/Cargo.toml --all-features
+          args: --manifest-path server/Cargo.toml --all-features
 
   build-image:
     name: Build docker image (and publish on master)
@@ -84,7 +84,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v3
         with:
-          context: ./
+          context: ./server
           file: ./Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: ${{ github.ref == 'refs/heads/master' }}
