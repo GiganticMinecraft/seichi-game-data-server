@@ -12,7 +12,7 @@ trait FromEnvLikeKeyValuePairs: Sized {
 
 impl<T: FromEnvLikeKeyValuePairs> FromEnv for T {
     fn from_env() -> Result<Self, Error> {
-        // std::env::Vars is !Clone
+        // std::env::Vars is not Clone
         Self::from_iter(std::env::vars().collect::<Vec<_>>().into_iter())
     }
 }
