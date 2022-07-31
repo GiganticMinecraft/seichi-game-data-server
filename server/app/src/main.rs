@@ -3,7 +3,7 @@
 #![allow(clippy::cargo_common_metadata)]
 
 use config::{AppConfig, FromEnv, SourceDatabaseConfig};
-use infra_grpc::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
+use infra_grpc::buf_generated::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
     ReadService, ReadServiceServer,
 };
 use infra_grpc::read::ReadServiceImpl;

@@ -1,8 +1,7 @@
-use crate::gigantic_minecraft::seichi_game_data;
-use crate::gigantic_minecraft::seichi_game_data::v1::read_service_server::ReadService;
-use crate::gigantic_minecraft::seichi_game_data::v1::{
-    BreakCountsResponse, BuildCountsResponse, LastQuitsResponse, PlayTicksResponse,
-    VoteCountsResponse,
+use crate::buf_generated::gigantic_minecraft::seichi_game_data;
+use crate::buf_generated::gigantic_minecraft::seichi_game_data::v1::{
+    read_service_server::ReadService, BreakCountsResponse, BuildCountsResponse, LastQuitsResponse,
+    PlayTicksResponse, VoteCountsResponse,
 };
 use async_trait::async_trait;
 use domain::app_models::VecDataSource;
