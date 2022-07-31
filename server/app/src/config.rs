@@ -18,12 +18,12 @@ impl<T: FromEnvLikeKeyValuePairs> FromEnv for T {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Config {
+pub struct AppConfig {
     pub source_database_config: SourceDatabaseConfig,
     pub http_config: HttpConfig,
 }
 
-impl FromEnvLikeKeyValuePairs for Config {
+impl FromEnvLikeKeyValuePairs for AppConfig {
     fn from_iter(iter: impl Iterator<Item = (String, String)> + Clone) -> Result<Self, Error> {
         Ok(Self {
             source_database_config: SourceDatabaseConfig::from_iter(iter.clone())?,
@@ -65,7 +65,7 @@ impl FromEnvLikeKeyValuePairs for HttpConfig {
 
 #[cfg(test)]
 mod test {
-    use crate::config::{Config, FromEnvLikeKeyValuePairs};
+    use crate::config::{AppConfig, FromEnvLikeKeyValuePairs};
 
     #[test]
     fn read_config_from_iterator() {
@@ -79,6 +79,6 @@ mod test {
             ("DB_PASSWORD".to_string(), "$tr0ngpAssw0rd".to_string()),
         ];
 
-        Config::from_iter(setting.into_iter()).unwrap();
+        AppConfig::from_iter(setting.into_iter()).unwrap();
     }
 }

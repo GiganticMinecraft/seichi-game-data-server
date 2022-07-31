@@ -2,7 +2,7 @@
 #![warn(clippy::nursery, clippy::pedantic)]
 #![allow(clippy::cargo_common_metadata)]
 
-use seichi_game_api::config::{Config, FromEnv, SourceDatabaseConfig};
+use seichi_game_api::config::{AppConfig, FromEnv, SourceDatabaseConfig};
 use seichi_game_api::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
     ReadService, ReadServiceServer,
 };
@@ -32,7 +32,7 @@ async fn initialize_database_read_service(
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Reading config...");
-    let config = Config::from_env()?;
+    let config = AppConfig::from_env()?;
 
     let service = initialize_database_read_service(&config.source_database_config)
         .await
