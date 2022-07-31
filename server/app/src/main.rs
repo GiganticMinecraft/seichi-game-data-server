@@ -2,17 +2,17 @@
 #![warn(clippy::nursery, clippy::pedantic)]
 #![allow(clippy::cargo_common_metadata)]
 
-use seichi_game_api::config::{AppConfig, FromEnv, SourceDatabaseConfig};
-use seichi_game_api::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
+use config::{AppConfig, FromEnv, SourceDatabaseConfig};
+use infra_grpc::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
     ReadService, ReadServiceServer,
 };
-use seichi_game_api::services::read::ReadServiceImpl;
+use infra_grpc::read::ReadServiceImpl;
 use tonic::transport::Server;
 
 async fn initialize_database_read_service(
     config: &SourceDatabaseConfig,
 ) -> anyhow::Result<impl ReadService> {
-    use seichi_game_api::db::data_sources;
+    use infra_repository_impl::data_sources;
 
     let data_source = Box::new(data_sources::mysql_data_source(config).await?);
 

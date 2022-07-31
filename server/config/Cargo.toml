@@ -1,0 +1,10 @@
+[package]
+name = "config"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.58"
+async-trait = "0.1.56"
+envy = "0.4.2"
+serde = "1.0.140"

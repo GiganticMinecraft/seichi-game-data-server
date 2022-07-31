@@ -1,4 +1,3 @@
-use crate::config::SourceDatabaseConfig;
 use domain::app_models::VecDataSource;
 use domain::models::{
     Player, PlayerBreakCount, PlayerBuildCount, PlayerLastQuit, PlayerPlayTicks, PlayerVoteCount,
@@ -7,6 +6,7 @@ use domain::models::{
 use anyhow::anyhow;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use config::SourceDatabaseConfig;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool, Row};
 

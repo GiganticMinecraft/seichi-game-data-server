@@ -195,6 +195,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "envy",
+ "serde",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -602,6 +612,37 @@ checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
  "hashbrown",
+]
+
+[[package]]
+name = "infra_grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "domain",
+ "envy",
+ "log",
+ "pbjson-types",
+ "prost",
+ "serde",
+ "tokio",
+ "tonic",
+]
+
+[[package]]
+name = "infra_repository_impl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "config",
+ "domain",
+ "serde",
+ "sqlx",
+ "tokio",
 ]
 
 [[package]]
@@ -1186,9 +1227,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "chrono",
+ "config",
  "domain",
  "envy",
+ "infra_grpc",
+ "infra_repository_impl",
  "log",
  "pbjson-types",
  "prost",
