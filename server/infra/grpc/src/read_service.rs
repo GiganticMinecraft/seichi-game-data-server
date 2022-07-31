@@ -3,11 +3,13 @@ use crate::buf_generated::gigantic_minecraft::seichi_game_data::v1::{
     read_service_server::ReadService, BreakCountsResponse, BuildCountsResponse, LastQuitsResponse,
     PlayTicksResponse, VoteCountsResponse,
 };
-use async_trait::async_trait;
+
 use domain::app_models::VecDataSource;
 use domain::models::{
     Player, PlayerBreakCount, PlayerBuildCount, PlayerLastQuit, PlayerPlayTicks, PlayerVoteCount,
 };
+
+use async_trait::async_trait;
 
 fn to_tonic_player(model: Player) -> seichi_game_data::v1::Player {
     seichi_game_data::v1::Player {

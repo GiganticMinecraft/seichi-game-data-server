@@ -199,7 +199,6 @@ name = "config"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "envy",
  "serde",
 ]
@@ -310,9 +309,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "chrono",
- "serde",
- "tokio",
 ]
 
 [[package]]
@@ -620,14 +616,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "chrono",
  "domain",
- "envy",
  "log",
  "pbjson-types",
  "prost",
  "serde",
- "tokio",
  "tonic",
 ]
 
@@ -640,9 +633,7 @@ dependencies = [
  "chrono",
  "config",
  "domain",
- "serde",
  "sqlx",
- "tokio",
 ]
 
 [[package]]
@@ -1226,17 +1217,10 @@ name = "seichi-game-api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "config",
  "domain",
- "envy",
  "infra_grpc",
  "infra_repository_impl",
- "log",
- "pbjson-types",
- "prost",
- "serde",
- "sqlx",
  "tokio",
  "tonic",
 ]
