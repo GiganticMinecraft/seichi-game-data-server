@@ -31,6 +31,7 @@ async fn create_connection_pool(
         .await?)
 }
 
+#[derive(Debug, Clone)]
 struct MySqlDataSource {
     connection_pool: Pool<MySql>,
 }
@@ -149,37 +150,24 @@ impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
     }
 }
 
-pub async fn last_quit_data_source(
-    config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerLastQuit> + Send + Sync + 'static, anyhow::Error> {
-    let connection_pool = create_connection_pool(config).await?;
-    Ok(MySqlDataSource { connection_pool })
+pub trait CombinedDataSource:
+    VecDataSource<PlayerLastQuit>
+    + VecDataSource<PlayerBreakCount>
+    + VecDataSource<PlayerBuildCount>
+    + VecDataSource<PlayerPlayTicks>
+    + VecDataSource<PlayerVoteCount>
+    + Clone
+    + Send
+    + Sync
+    + 'static
+{
 }
 
-pub async fn break_count_data_source(
-    config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerBreakCount> + Send + Sync + 'static, anyhow::Error> {
-    let connection_pool = create_connection_pool(config).await?;
-    Ok(MySqlDataSource { connection_pool })
-}
+impl CombinedDataSource for MySqlDataSource {}
 
-pub async fn build_count_data_source(
+pub async fn mysql_data_source(
     config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerBuildCount> + Send + Sync + 'static, anyhow::Error> {
-    let connection_pool = create_connection_pool(config).await?;
-    Ok(MySqlDataSource { connection_pool })
-}
-
-pub async fn play_ticks_data_source(
-    config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerPlayTicks> + Send + Sync + 'static, anyhow::Error> {
-    let connection_pool = create_connection_pool(config).await?;
-    Ok(MySqlDataSource { connection_pool })
-}
-
-pub async fn vote_count_data_source(
-    config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerVoteCount> + Send + Sync + 'static, anyhow::Error> {
+) -> anyhow::Result<impl CombinedDataSource> {
     let connection_pool = create_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }

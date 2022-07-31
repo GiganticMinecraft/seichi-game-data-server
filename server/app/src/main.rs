@@ -14,18 +14,14 @@ async fn initialize_database_read_service(
 ) -> anyhow::Result<impl ReadService> {
     use seichi_game_api::db::data_sources;
 
-    let last_quit_data_source = data_sources::last_quit_data_source(config).await?;
-    let break_counts_data_source = data_sources::break_count_data_source(config).await?;
-    let build_counts_data_source = data_sources::build_count_data_source(config).await?;
-    let play_ticks_data_source = data_sources::play_ticks_data_source(config).await?;
-    let vote_counts_data_source = data_sources::vote_count_data_source(config).await?;
+    let data_source = data_sources::mysql_data_source(config).await?;
 
     Ok(ReadServiceImpl {
-        last_quit_data_source,
-        break_counts_data_source,
-        build_counts_data_source,
-        play_ticks_data_source,
-        vote_counts_data_source,
+        last_quit_data_source: data_source.clone(),
+        break_counts_data_source: data_source.clone(),
+        build_counts_data_source: data_source.clone(),
+        play_ticks_data_source: data_source.clone(),
+        vote_counts_data_source: data_source,
     })
 }
 
