@@ -195,6 +195,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "envy",
+ "serde",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -292,6 +301,14 @@ checksum = "f2fb860ca6fafa5552fb6d0e816a69c8e49f0908bf524e30a90d97c85892d506"
 dependencies = [
  "block-buffer",
  "crypto-common",
+]
+
+[[package]]
+name = "domain"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
 ]
 
 [[package]]
@@ -591,6 +608,32 @@ checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
  "hashbrown",
+]
+
+[[package]]
+name = "infra_grpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "domain",
+ "log",
+ "pbjson-types",
+ "prost",
+ "serde",
+ "tonic",
+]
+
+[[package]]
+name = "infra_repository_impl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "config",
+ "domain",
+ "sqlx",
 ]
 
 [[package]]
@@ -1174,14 +1217,10 @@ name = "seichi-game-api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
- "chrono",
- "envy",
- "log",
- "pbjson-types",
- "prost",
- "serde",
- "sqlx",
+ "config",
+ "domain",
+ "infra_grpc",
+ "infra_repository_impl",
  "tokio",
  "tonic",
 ]

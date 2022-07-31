@@ -4,14 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+domain = { path = "../domain" }
+config = { path = "../config" }
+infra_grpc = { path = "../infra/grpc" }
+infra_repository_impl = { path = "../infra/repository_impl" }
+
 anyhow = "1.0.58"
-async-trait = "0.1.56"
-chrono = "0.4.19"
-envy = "0.4.2"
-log = "0.4.17"
-pbjson-types = "0.3.2"
-prost = "0.10.4"
-serde = "1.0.140"
-sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
 tokio = { version = "1.20.1", features = ["rt-multi-thread"] }
 tonic = { version = "0.7.2", features = ["compression"] }

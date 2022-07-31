@@ -1,13 +1,14 @@
-use crate::app_models::VecDataSource;
-use crate::gigantic_minecraft::seichi_game_data;
-use crate::gigantic_minecraft::seichi_game_data::v1::read_service_server::ReadService;
-use crate::gigantic_minecraft::seichi_game_data::v1::{
-    BreakCountsResponse, BuildCountsResponse, LastQuitsResponse, PlayTicksResponse,
-    VoteCountsResponse,
+use crate::buf_generated::gigantic_minecraft::seichi_game_data;
+use crate::buf_generated::gigantic_minecraft::seichi_game_data::v1::{
+    read_service_server::ReadService, BreakCountsResponse, BuildCountsResponse, LastQuitsResponse,
+    PlayTicksResponse, VoteCountsResponse,
 };
-use crate::models::{
+
+use domain::app_models::VecDataSource;
+use domain::models::{
     Player, PlayerBreakCount, PlayerBuildCount, PlayerLastQuit, PlayerPlayTicks, PlayerVoteCount,
 };
+
 use async_trait::async_trait;
 
 fn to_tonic_player(model: Player) -> seichi_game_data::v1::Player {
@@ -91,27 +92,19 @@ fn to_tonic_error_status(anyhow_error: anyhow::Error) -> tonic::Status {
     Status::unknown("Unknown error. See the server log for more details.")
 }
 
-pub struct ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS> {
-    pub last_quit_data_source: LastQuitDS,
-    pub break_counts_data_source: BreakCountDS,
-    pub build_counts_data_source: BuildCountDS,
-    pub play_ticks_data_source: PlayTicksDS,
-    pub vote_counts_data_source: VoteCountDS,
+pub struct ReadServiceImpl {
+    pub last_quit_data_source: Box<dyn VecDataSource<PlayerLastQuit> + Send + Sync>,
+    pub break_counts_data_source: Box<dyn VecDataSource<PlayerBreakCount> + Send + Sync>,
+    pub build_counts_data_source: Box<dyn VecDataSource<PlayerBuildCount> + Send + Sync>,
+    pub play_ticks_data_source: Box<dyn VecDataSource<PlayerPlayTicks> + Send + Sync>,
+    pub vote_counts_data_source: Box<dyn VecDataSource<PlayerVoteCount> + Send + Sync>,
 }
 
 #[async_trait]
-impl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS> ReadService
-    for ReadServiceImpl<LastQuitDS, BreakCountDS, BuildCountDS, PlayTicksDS, VoteCountDS>
-where
-    LastQuitDS: VecDataSource<PlayerLastQuit> + Send + Sync + 'static,
-    BreakCountDS: VecDataSource<PlayerBreakCount> + Send + Sync + 'static,
-    BuildCountDS: VecDataSource<PlayerBuildCount> + Send + Sync + 'static,
-    PlayTicksDS: VecDataSource<PlayerPlayTicks> + Send + Sync + 'static,
-    VoteCountDS: VecDataSource<PlayerVoteCount> + Send + Sync + 'static,
-{
+impl ReadService for ReadServiceImpl {
     async fn last_quits(
         &self,
-        _request: tonic::Request<::pbjson_types::Empty>,
+        _request: tonic::Request<pbjson_types::Empty>,
     ) -> Result<tonic::Response<LastQuitsResponse>, tonic::Status> {
         self.last_quit_data_source
             .fetch()
@@ -122,7 +115,7 @@ where
 
     async fn break_counts(
         &self,
-        _request: tonic::Request<::pbjson_types::Empty>,
+        _request: tonic::Request<pbjson_types::Empty>,
     ) -> Result<tonic::Response<BreakCountsResponse>, tonic::Status> {
         self.break_counts_data_source
             .fetch()
@@ -133,7 +126,7 @@ where
 
     async fn build_counts(
         &self,
-        _request: tonic::Request<::pbjson_types::Empty>,
+        _request: tonic::Request<pbjson_types::Empty>,
     ) -> Result<tonic::Response<BuildCountsResponse>, tonic::Status> {
         self.build_counts_data_source
             .fetch()
@@ -144,7 +137,7 @@ where
 
     async fn play_ticks(
         &self,
-        _request: tonic::Request<::pbjson_types::Empty>,
+        _request: tonic::Request<pbjson_types::Empty>,
     ) -> Result<tonic::Response<PlayTicksResponse>, tonic::Status> {
         self.play_ticks_data_source
             .fetch()
@@ -155,7 +148,7 @@ where
 
     async fn vote_counts(
         &self,
-        _request: tonic::Request<::pbjson_types::Empty>,
+        _request: tonic::Request<pbjson_types::Empty>,
     ) -> Result<tonic::Response<VoteCountsResponse>, tonic::Status> {
         self.vote_counts_data_source
             .fetch()
