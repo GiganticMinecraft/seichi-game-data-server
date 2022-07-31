@@ -1,13 +1,14 @@
-use crate::app_models::VecDataSource;
 use crate::config::SourceDatabaseConfig;
-use crate::models::{
+use domain::app_models::VecDataSource;
+use domain::models::{
     Player, PlayerBreakCount, PlayerBuildCount, PlayerLastQuit, PlayerPlayTicks, PlayerVoteCount,
 };
+
 use anyhow::anyhow;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::mysql::{MySqlPoolOptions, MySqlRow};
-use sqlx::{Error, FromRow, MySql, Pool, Row};
+use sqlx::mysql::MySqlPoolOptions;
+use sqlx::{MySql, Pool, Row};
 
 async fn create_connection_pool(config: &SourceDatabaseConfig) -> Result<Pool<MySql>, sqlx::Error> {
     const MAX_CONNS: u32 = 5;
@@ -36,125 +37,110 @@ struct MySqlDataSource {
 // https://github.com/GiganticMinecraft/SeichiAssist/blob/2994a7269edb0427bd9d59c8ec822742638609c2/src/main/resources/db/migration/V1.0.0__Create_static_tables_and_columns.sql
 // を参照されたい。
 
-impl<'r> FromRow<'r, MySqlRow> for PlayerLastQuit {
-    fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(PlayerLastQuit {
-            player: Player {
-                // varchar(128) -> String
-                uuid: row.try_get("uuid")?,
-                // varchar(30) -> String
-                last_known_name: row.try_get("name")?,
-            },
-            // datetime -> String
-            rfc_3339_date_time: row.try_get::<DateTime<Utc>, _>("lastquit")?.to_rfc3339(),
-        })
-    }
-}
-
 #[async_trait]
 impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerLastQuit>> {
-        sqlx::query_as("SELECT name, uuid, lastquit From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, lastquit From playerdata")
+            .try_map(|row| {
+                Ok(PlayerLastQuit {
+                    player: Player {
+                        // varchar(128) -> String
+                        uuid: row.try_get("uuid")?,
+                        // varchar(30) -> String
+                        last_known_name: row.try_get("name")?,
+                    },
+                    // datetime -> String
+                    rfc_3339_date_time: row.try_get::<DateTime<Utc>, _>("lastquit")?.to_rfc3339(),
+                })
+            })
             .fetch_all(&self.connection_pool)
             .await
             .map_err(|e| anyhow!(e))
-    }
-}
-
-impl<'r> FromRow<'r, MySqlRow> for PlayerBreakCount {
-    fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(PlayerBreakCount {
-            player: Player {
-                // varchar(128) -> String
-                uuid: row.try_get("uuid")?,
-                // varchar(30) -> String
-                last_known_name: row.try_get("name")?,
-            },
-            // bigint -> String
-            break_count: row.try_get("totalbreaknum")?,
-        })
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBreakCount>> {
-        sqlx::query_as("SELECT name, uuid, totalbreaknum From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, totalbreaknum From playerdata")
+            .try_map(|row| {
+                Ok(PlayerBreakCount {
+                    player: Player {
+                        // varchar(128) -> String
+                        uuid: row.try_get("uuid")?,
+                        // varchar(30) -> String
+                        last_known_name: row.try_get("name")?,
+                    },
+                    // bigint -> String
+                    break_count: row.try_get("totalbreaknum")?,
+                })
+            })
             .fetch_all(&self.connection_pool)
             .await
             .map_err(|e| anyhow!(e))
-    }
-}
-
-impl<'r> FromRow<'r, MySqlRow> for PlayerBuildCount {
-    fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(PlayerBuildCount {
-            player: Player {
-                // varchar(128) -> String
-                uuid: row.try_get("uuid")?,
-                // varchar(30) -> String
-                last_known_name: row.try_get("name")?,
-            },
-            // double -> u64
-            build_count: row.try_get::<f64, _>("build_count")?.round() as u64,
-        })
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBuildCount>> {
-        sqlx::query_as("SELECT name, uuid, build_count From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, build_count From playerdata")
+            .try_map(|row| {
+                Ok(PlayerBuildCount {
+                    player: Player {
+                        // varchar(128) -> String
+                        uuid: row.try_get("uuid")?,
+                        // varchar(30) -> String
+                        last_known_name: row.try_get("name")?,
+                    },
+                    // double -> u64
+                    build_count: row.try_get::<f64, _>("build_count")?.round() as u64,
+                })
+            })
             .fetch_all(&self.connection_pool)
             .await
             .map_err(|e| anyhow!(e))
-    }
-}
-
-impl<'r> FromRow<'r, MySqlRow> for PlayerPlayTicks {
-    fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(PlayerPlayTicks {
-            player: Player {
-                // varchar(128) -> String
-                uuid: row.try_get("uuid")?,
-                // varchar(30) -> String
-                last_known_name: row.try_get("name")?,
-            },
-            // i32 -> u64
-            play_ticks: row.try_get::<i32, _>("playtick")? as u64,
-        })
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerPlayTicks>> {
-        sqlx::query_as("SELECT name, uuid, playtick From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, playtick From playerdata")
+            .try_map(|row| {
+                Ok(PlayerPlayTicks {
+                    player: Player {
+                        // varchar(128) -> String
+                        uuid: row.try_get("uuid")?,
+                        // varchar(30) -> String
+                        last_known_name: row.try_get("name")?,
+                    },
+                    // i32 -> u64
+                    play_ticks: row.try_get::<i32, _>("playtick")? as u64,
+                })
+            })
             .fetch_all(&self.connection_pool)
             .await
             .map_err(|e| anyhow!(e))
     }
 }
 
-impl<'r> FromRow<'r, MySqlRow> for PlayerVoteCount {
-    fn from_row(row: &'r MySqlRow) -> Result<Self, Error> {
-        Ok(PlayerVoteCount {
-            player: Player {
-                // varchar(128) -> String
-                uuid: row.try_get("uuid")?,
-                // varchar(30) -> String
-                last_known_name: row.try_get("name")?,
-            },
-            // i32 -> u64
-            vote_count: row.try_get::<i32, _>("p_vote")? as u64,
-        })
-    }
-}
-
 #[async_trait]
 impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerVoteCount>> {
-        sqlx::query_as("SELECT name, uuid, p_vote From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, p_vote From playerdata")
+            .try_map(|row| {
+                Ok(PlayerVoteCount {
+                    player: Player {
+                        // varchar(128) -> String
+                        uuid: row.try_get("uuid")?,
+                        // varchar(30) -> String
+                        last_known_name: row.try_get("name")?,
+                    },
+                    // i32 -> u64
+                    vote_count: row.try_get::<i32, _>("p_vote")? as u64,
+                })
+            })
             .fetch_all(&self.connection_pool)
             .await
             .map_err(|e| anyhow!(e))
