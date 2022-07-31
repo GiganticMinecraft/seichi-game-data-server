@@ -65,7 +65,7 @@ impl FromEnvLikeKeyValuePairs for HttpConfig {
 
 #[cfg(test)]
 mod test {
-    use crate::config::{AppConfig, FromEnvLikeKeyValuePairs};
+    use super::*;
 
     #[test]
     fn read_config_from_iterator() {
