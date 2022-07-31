@@ -10,10 +10,12 @@ use chrono::{DateTime, Utc};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool, Row};
 
-async fn create_connection_pool(config: &SourceDatabaseConfig) -> Result<Pool<MySql>, sqlx::Error> {
+async fn create_connection_pool(
+    config: &SourceDatabaseConfig,
+) -> Result<Pool<MySql>, anyhow::Error> {
     const MAX_CONNS: u32 = 5;
 
-    MySqlPoolOptions::new()
+    Ok(MySqlPoolOptions::new()
         .max_connections(MAX_CONNS)
         .connect(
             format!(
@@ -26,7 +28,7 @@ async fn create_connection_pool(config: &SourceDatabaseConfig) -> Result<Pool<My
             )
             .as_str(),
         )
-        .await
+        .await?)
 }
 
 struct MySqlDataSource {
@@ -149,35 +151,35 @@ impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
 
 pub async fn last_quit_data_source(
     config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerLastQuit> + Send + Sync + 'static, sqlx::Error> {
+) -> Result<impl VecDataSource<PlayerLastQuit> + Send + Sync + 'static, anyhow::Error> {
     let connection_pool = create_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }
 
 pub async fn break_count_data_source(
     config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerBreakCount> + Send + Sync + 'static, sqlx::Error> {
+) -> Result<impl VecDataSource<PlayerBreakCount> + Send + Sync + 'static, anyhow::Error> {
     let connection_pool = create_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }
 
 pub async fn build_count_data_source(
     config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerBuildCount> + Send + Sync + 'static, sqlx::Error> {
+) -> Result<impl VecDataSource<PlayerBuildCount> + Send + Sync + 'static, anyhow::Error> {
     let connection_pool = create_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }
 
 pub async fn play_ticks_data_source(
     config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerPlayTicks> + Send + Sync + 'static, sqlx::Error> {
+) -> Result<impl VecDataSource<PlayerPlayTicks> + Send + Sync + 'static, anyhow::Error> {
     let connection_pool = create_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }
 
 pub async fn vote_count_data_source(
     config: &SourceDatabaseConfig,
-) -> Result<impl VecDataSource<PlayerVoteCount> + Send + Sync + 'static, sqlx::Error> {
+) -> Result<impl VecDataSource<PlayerVoteCount> + Send + Sync + 'static, anyhow::Error> {
     let connection_pool = create_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }
