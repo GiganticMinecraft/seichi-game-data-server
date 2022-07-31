@@ -6,15 +6,15 @@ use config::{AppConfig, FromEnv, SourceDatabaseConfig};
 use infra_grpc::buf_generated::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
     ReadService, ReadServiceServer,
 };
-use infra_grpc::read::ReadServiceImpl;
+use infra_grpc::read_service::ReadServiceImpl;
 use tonic::transport::Server;
 
 async fn initialize_database_read_service(
     config: &SourceDatabaseConfig,
 ) -> anyhow::Result<impl ReadService> {
-    use infra_repository_impl::data_sources;
+    use infra_repository_impl::mysql_data_source;
 
-    let data_source = Box::new(data_sources::mysql_data_source(config).await?);
+    let data_source = Box::new(mysql_data_source::from_config(config).await?);
 
     Ok(ReadServiceImpl {
         last_quit_data_source: data_source.clone(),

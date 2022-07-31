@@ -10,7 +10,7 @@ use config::SourceDatabaseConfig;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool, Row};
 
-async fn create_connection_pool(
+async fn create_mysql_connection_pool(
     config: &SourceDatabaseConfig,
 ) -> Result<Pool<MySql>, anyhow::Error> {
     const MAX_CONNS: u32 = 5;
@@ -165,9 +165,7 @@ pub trait CombinedDataSource:
 
 impl CombinedDataSource for MySqlDataSource {}
 
-pub async fn mysql_data_source(
-    config: &SourceDatabaseConfig,
-) -> anyhow::Result<impl CombinedDataSource> {
-    let connection_pool = create_connection_pool(config).await?;
+pub async fn from_config(config: &SourceDatabaseConfig) -> anyhow::Result<impl CombinedDataSource> {
+    let connection_pool = create_mysql_connection_pool(config).await?;
     Ok(MySqlDataSource { connection_pool })
 }
