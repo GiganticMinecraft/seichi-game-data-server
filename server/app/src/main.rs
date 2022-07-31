@@ -14,7 +14,7 @@ async fn initialize_database_read_service(
 ) -> anyhow::Result<impl ReadService> {
     use seichi_game_api::db::data_sources;
 
-    let data_source = data_sources::mysql_data_source(config).await?;
+    let data_source = Box::new(data_sources::mysql_data_source(config).await?);
 
     Ok(ReadServiceImpl {
         last_quit_data_source: data_source.clone(),
