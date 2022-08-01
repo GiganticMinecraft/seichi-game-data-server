@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.58"
 envy = "0.4.2"
-serde = "1.0.140"
+serde = "1.0.141"
