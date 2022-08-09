@@ -75,8 +75,9 @@ impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
                         // varchar(30) -> String
                         last_known_name: row.try_get("name")?,
                     },
-                    // bigint -> String
-                    break_count: row.try_get("totalbreaknum")?,
+                    // bigint -> i64 -> u64
+                    // because bigint corresponds to i64 (https://docs.rs/sqlx/0.6.1/sqlx/mysql/types/index.html)
+                    break_count: row.try_get::<i64, _>("totalbreaknum")? as u64,
                 })
             })
             .fetch_all(&self.connection_pool)
