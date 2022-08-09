@@ -8,6 +8,8 @@ use infra_grpc::buf_generated::gigantic_minecraft::seichi_game_data::v1::read_se
 };
 use infra_grpc::read_service::ReadServiceImpl;
 use tonic::transport::Server;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 async fn initialize_database_read_service(
     config: &SourceDatabaseConfig,
@@ -27,6 +29,15 @@ async fn initialize_database_read_service(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // initialize tracing
+    // see https://github.com/tokio-rs/axum/blob/79a0a54bc9f0f585c974b5e6793541baff980662/examples/tracing-aka-logging/src/main.rs
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::new(
+            std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()),
+        ))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     println!("Reading config...");
     let config = AppConfig::from_env()?;
 
@@ -41,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Server will be listening on {}", serve_address);
 
     Server::builder()
+        .layer(tower_http::trace::TraceLayer::new_for_http())
         .add_service(ReadServiceServer::new(service))
         .serve(serve_address)
         .await?;
