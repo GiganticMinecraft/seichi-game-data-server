@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 domain = { path = "../../domain" }
 
-anyhow = "1.0.62"
+anyhow = "1.0.64"
 async-trait = "0.1.57"
 log = "0.4.17"
 pbjson-types = "0.3.2"
