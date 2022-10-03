@@ -11,5 +11,5 @@ async-trait = "0.1.57"
 log = "0.4.17"
 pbjson-types = "0.3.2"
 prost = "0.10.4"
-serde = "1.0.144"
+serde = "1.0.145"
 tonic = { version = "0.7.2", features = ["compression"] }
