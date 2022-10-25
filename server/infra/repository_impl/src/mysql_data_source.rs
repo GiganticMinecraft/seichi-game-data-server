@@ -120,8 +120,8 @@ impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
                         // varchar(30) -> String
                         last_known_name: row.try_get("name")?,
                     },
-                    // i32 -> u64
-                    play_ticks: row.try_get::<i32, _>("playtick")? as u64,
+                    // i64 -> u64
+                    play_ticks: row.try_get::<i64, _>("playtick")? as u64,
                 })
             })
             .fetch_all(&self.connection_pool)
