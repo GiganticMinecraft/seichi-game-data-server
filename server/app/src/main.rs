@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse()
         .expect("Parsing serve address from config");
 
-    println!("Server will be listening on {}", serve_address);
+    println!("Server will be listening on {serve_address}");
 
     Server::builder()
         .layer(tower_http::trace::TraceLayer::new_for_http())
