@@ -133,7 +133,7 @@ impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerVoteCount>> {
-        sqlx::query::<MySql>("SELECT name, uuid, p_vote From playerdata")
+        sqlx::query::<MySql>("SELECT playerdata.name, playerdata.uuid, vote_number From vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid")
             .try_map(|row| {
                 Ok(PlayerVoteCount {
                     player: Player {
@@ -143,7 +143,7 @@ impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
                         last_known_name: row.try_get("name")?,
                     },
                     // i32 -> u64
-                    vote_count: row.try_get::<i32, _>("p_vote")? as u64,
+                    vote_count: row.try_get::<i32, _>("vote_number")? as u64,
                 })
             })
             .fetch_all(&self.connection_pool)
