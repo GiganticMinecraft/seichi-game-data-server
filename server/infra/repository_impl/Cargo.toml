@@ -9,5 +9,5 @@ config = { path = "../../config" }
 
 anyhow = "1.0.71"
 async-trait = "0.1.68"
-chrono = "0.4.23"
+chrono = "0.4.24"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
