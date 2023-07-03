@@ -10,7 +10,7 @@ edition = "2021"
 domain = { path = "../../domain" }
 
 anyhow = "1.0.71"
-async-trait = "0.1.68"
+async-trait = "0.1.69"
 log = "0.4.19"
 pbjson-types = "0.5.1"
 prost = "0.11.9"
