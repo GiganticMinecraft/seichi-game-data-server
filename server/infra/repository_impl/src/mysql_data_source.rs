@@ -44,7 +44,7 @@ struct MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerLastQuit>> {
-        sqlx::query::<MySql>("SELECT name, uuid, lastquit From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, lastquit FROM playerdata")
             .try_map(|row| {
                 Ok(PlayerLastQuit {
                     player: Player {
@@ -66,7 +66,7 @@ impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBreakCount>> {
-        sqlx::query::<MySql>("SELECT name, uuid, totalbreaknum From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, totalbreaknum FROM playerdata")
             .try_map(|row| {
                 Ok(PlayerBreakCount {
                     player: Player {
@@ -89,7 +89,7 @@ impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBuildCount>> {
-        sqlx::query::<MySql>("SELECT name, uuid, build_count From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, build_count FROM playerdata")
             .try_map(|row| {
                 Ok(PlayerBuildCount {
                     player: Player {
@@ -111,7 +111,7 @@ impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerPlayTicks>> {
-        sqlx::query::<MySql>("SELECT name, uuid, playtick From playerdata")
+        sqlx::query::<MySql>("SELECT name, uuid, playtick FROM playerdata")
             .try_map(|row| {
                 Ok(PlayerPlayTicks {
                     player: Player {
@@ -133,7 +133,7 @@ impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerVoteCount>> {
-        sqlx::query::<MySql>("SELECT playerdata.name, playerdata.uuid, vote_number From vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid")
+        sqlx::query::<MySql>("SELECT playerdata.name, playerdata.uuid, vote_number FROM vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid")
             .try_map(|row| {
                 Ok(PlayerVoteCount {
                     player: Player {
