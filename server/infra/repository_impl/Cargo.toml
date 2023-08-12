@@ -8,6 +8,6 @@ domain = { path = "../../domain" }
 config = { path = "../../config" }
 
 anyhow = "1.0.72"
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 chrono = "0.4.26"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
