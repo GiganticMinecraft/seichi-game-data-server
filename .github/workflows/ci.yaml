@@ -83,7 +83,7 @@ jobs:
 
       - name: Build (and push if on master)
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./server
           file: ./Dockerfile
