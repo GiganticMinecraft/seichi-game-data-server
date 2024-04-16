@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.82"
-async-trait = "0.1.74"
+async-trait = "0.1.80"
