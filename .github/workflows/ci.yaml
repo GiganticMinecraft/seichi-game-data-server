@@ -41,7 +41,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           flags: --all
           toolchain: 'stable'
-          options: --manifest-path ./server/Cargo.toml
           args: --config-path=./server/rustfmt.toml
           working-directory: ./server
 
