@@ -36,19 +36,12 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cargo fmt
-        uses: LoliGothick/rustfmt-check@v0.4.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          flags: --all
-          toolchain: 'stable'
-          args: --config-path=./server/rustfmt.toml
-          working-directory: ./server
+        run: cargo fmt --all -- --check
+        working-directory: ./server
 
       - name: Cargo clippy
-        uses: LoliGothick/clippy-check@v0.3.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: ./server
+        run: cargo clippy --all-features -- -D warnings
+        working-directory: ./server
 
       - name: Cargo test
         run: cargo test --all-features
