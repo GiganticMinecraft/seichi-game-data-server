@@ -9,10 +9,10 @@ edition = "2021"
 
 domain = { path = "../../domain" }
 
-anyhow = "1.0.82"
-async-trait = "0.1.80"
-log = "0.4.21"
+anyhow = "1.0.95"
+async-trait = "0.1.85"
+log = "0.4.25"
 pbjson-types = "0.5.1"
 prost = "0.11.9"
-serde = "1.0.198"
+serde = "1.0.217"
 tonic = { version = "0.9.2", features = ["gzip"] }
