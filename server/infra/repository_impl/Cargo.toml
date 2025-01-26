@@ -7,7 +7,7 @@ edition = "2021"
 domain = { path = "../../domain" }
 config = { path = "../../config" }
 
-anyhow = "1.0.82"
-async-trait = "0.1.80"
-chrono = "0.4.38"
+anyhow = "1.0.95"
+async-trait = "0.1.85"
+chrono = "0.4.39"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
