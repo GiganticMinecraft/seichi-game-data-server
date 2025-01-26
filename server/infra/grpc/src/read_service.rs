@@ -29,7 +29,7 @@ fn to_tonic_last_quit_response(model: Vec<PlayerLastQuit>) -> tonic::Response<La
             .collect(),
     })
 }
-
+//
 fn to_tonic_break_counts_response(
     model: Vec<PlayerBreakCount>,
 ) -> tonic::Response<BreakCountsResponse> {
