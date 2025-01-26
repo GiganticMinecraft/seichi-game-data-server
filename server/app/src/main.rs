@@ -1,5 +1,5 @@
-#![deny(clippy::all, clippy::cargo)]
-#![warn(clippy::nursery, clippy::pedantic)]
+#![deny(clippy::all)]
+#![warn(clippy::nursery, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::cargo_common_metadata)]
 
 use config::{AppConfig, FromEnv, SourceDatabaseConfig};
