@@ -1,32 +1,26 @@
-# syntax=docker/dockerfile:1.13
-FROM lukemathwalker/cargo-chef:latest-rust-1.82.0 AS chef
+# syntax=docker/dockerfile:1
+
+FROM rust:1.82.0-slim AS build
+
 WORKDIR /app
 
-FROM chef AS planner
-COPY --link . .
-RUN cargo chef prepare --recipe-path recipe.json
+COPY --from=bufbuild/buf:1.50.0 /usr/local/bin/buf /usr/local/bin/
+COPY --from=namely/protoc:1.42_2 /usr/local/bin/protoc /usr/local/bin/
 
-FROM bufbuild/buf:1.50.0 as buf
+RUN --mount=type=bind,source=.,target=/app/src \
+    --mount=type=cache,target=/app/build/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git/db \
+    cargo build --locked --release \
+        --manifest-path /app/src/Cargo.toml \
+        --target-dir /app/build/target
 
-FROM namely/protoc:1.42_2 as protoc
+FROM gcr.io/distroless/cc AS final
 
-FROM chef AS build-env
-COPY --from=planner --link /app/recipe.json recipe.json
-COPY --from=buf --link /usr/local/bin/buf /usr/local/bin/
-COPY --from=protoc --link /usr/local/bin/protoc /usr/local/bin/
+USER nonroot:nonroot
 
-# We need these because cargo chef cook will require protoc to build some modules
-ARG PROTOC_NO_VENDOR=true
-ARG PROTOC=/usr/local/bin/protoc
+LABEL org.opencontainers.image.source="https://github.com/GiganticMinecraft/seichi-game-data-server"
 
-# Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json
+COPY --from=build /app/build/target/release/seichi-game-data-server /bin/seichi-game-data-server
 
-# Build application
-COPY --link . .
-RUN cargo build --release
-
-FROM gcr.io/distroless/cc
-LABEL org.opencontainers.image.source=https://github.com/GiganticMinecraft/seichi-game-api
-COPY --from=build-env --link /app/target/release/seichi-game-api /
-CMD ["./seichi-game-api"]
+CMD ["/bin/seichi-game-data-server"]
