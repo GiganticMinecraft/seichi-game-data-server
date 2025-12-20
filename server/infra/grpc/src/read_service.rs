@@ -1,7 +1,7 @@
 use crate::buf_generated::gigantic_minecraft::seichi_game_data;
 use crate::buf_generated::gigantic_minecraft::seichi_game_data::v1::{
-    read_service_server::ReadService, BreakCountsResponse, BuildCountsResponse, LastQuitsResponse,
-    PlayTicksResponse, VoteCountsResponse,
+    BreakCountsResponse, BuildCountsResponse, LastQuitsResponse, PlayTicksResponse,
+    VoteCountsResponse, read_service_server::ReadService,
 };
 
 use domain::app_models::VecDataSource;
