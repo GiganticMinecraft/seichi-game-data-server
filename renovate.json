@@ -25,6 +25,18 @@
       ],
       "matchCurrentVersion": "/^0/",
       "automerge": true
+    },
+    {
+      "description": "bump prost/tonic/pbjson updates together",
+      "groupName": "protobuf/gRPC packages",
+      "matchPackageNames": [
+        "pbjson-types",
+        "prost",
+        "tonic"
+      ],
+      "matchManagers": [
+        "cargo"
+      ]
     }
   ]
 }
