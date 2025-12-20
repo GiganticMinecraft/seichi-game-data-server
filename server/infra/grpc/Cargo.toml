@@ -13,6 +13,6 @@ anyhow = "1.0.95"
 async-trait = "0.1.85"
 log = "0.4.25"
 pbjson-types = "0.7.0"
-prost = "0.13.0"
+prost = "0.14.0"
 serde = "1.0.217"
 tonic = { version = "0.12.0", features = ["gzip"] }
