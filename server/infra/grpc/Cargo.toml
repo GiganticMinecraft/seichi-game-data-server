@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# pbjson-types, prost, tonicは `<= 1.0.0` の範囲でminor versionが上がった場合全て一緒にbumpすること。buf.gen.yamlの
+# pbjson-types, prost, tonic, tonic-prost は `<= 1.0.0` の範囲でminor versionが上がった場合全て一緒にbumpすること。buf.gen.yamlの
 # バージョンをあげることも忘れずに。
 
 domain = { path = "../../domain" }
@@ -12,7 +12,8 @@ domain = { path = "../../domain" }
 anyhow = "1.0.95"
 async-trait = "0.1.85"
 log = "0.4.25"
-pbjson-types = "0.7.0"
-prost = "0.13.0"
+pbjson-types = "0.9.0"
+prost = "0.14.0"
 serde = "1.0.217"
-tonic = { version = "0.12.0", features = ["gzip"] }
+tonic = { version = "0.14.0", features = ["gzip"] }
+tonic-prost = "0.14.0"

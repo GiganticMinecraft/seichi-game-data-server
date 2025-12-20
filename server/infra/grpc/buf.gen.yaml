@@ -1,21 +1,20 @@
 version: v1
 plugins:
-  - plugin: buf.build/community/neoeinstein-prost:v0.2.3
+  - plugin: buf.build/community/neoeinstein-prost:v0.5.0
     out: src/gen
     # https://github.com/neoeinstein/protoc-gen-prost/tree/main/protoc-gen-prost#options
     opt:
-      - bytes=.
       - compile_well_known_types
       - extern_path=.google.protobuf=::pbjson_types
       - file_descriptor_set
-  - plugin: buf.build/community/neoeinstein-tonic:v0.3.0
+  - plugin: buf.build/community/neoeinstein-tonic:v0.5.0
     out: src/gen
     # https://github.com/neoeinstein/protoc-gen-prost/tree/main/protoc-gen-tonic
     opt:
       - compile_well_known_types
       - extern_path=.google.protobuf=::pbjson_types
       - no_client=true
-  - plugin: buf.build/community/neoeinstein-prost-crate:v0.3.1
+  - plugin: buf.build/community/neoeinstein-prost-crate:v0.5.0
     out: src/gen
     # https://github.com/neoeinstein/protoc-gen-prost/tree/main/protoc-gen-prost-crate
     opt:
