@@ -32,7 +32,8 @@
       "matchPackageNames": [
         "pbjson-types",
         "prost",
-        "tonic"
+        "tonic",
+        "tonic-prost"
       ],
       "matchManagers": [
         "cargo"
