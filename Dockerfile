@@ -6,7 +6,7 @@ FROM chef AS planner
 COPY --link . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM bufbuild/buf:1.67.0 AS buf
+FROM bufbuild/buf:1.68.4 AS buf
 
 FROM namely/protoc:1.42_2 AS protoc
 
