@@ -1,0 +1,9 @@
+# Frame pointers improve the quality of stack traces produced by the eBPF and
+# pprof-rs based profilers. Without this, release builds may omit them and
+# unwinding falls back to .eh_frame DWARF data, which is slower and less
+# reliable inside the kernel.
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "force-frame-pointers=yes"]
+
+[target.aarch64-unknown-linux-gnu]
+rustflags = ["-C", "force-frame-pointers=yes"]

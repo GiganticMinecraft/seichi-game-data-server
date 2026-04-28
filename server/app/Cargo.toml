@@ -14,4 +14,11 @@ tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 tonic = { version = "0.14.0", features = ["gzip"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing = "0.1.41"
-tower-http = { version = "0.6.0", features = ["trace"] }
+
+# Observability stack. Configured at runtime through OTEL_* / PYROSCOPE_*
+# environment variables; if unset, the exporters stay disabled and the binary
+# falls back to plain stdout logging.
+init-tracing-opentelemetry = { version = "0.37", features = ["otlp", "tracing_subscriber_ext", "tracer", "metrics", "logs", "tls-webpki-roots"] }
+tonic-tracing-opentelemetry = "0.32"
+opentelemetry = "0.31"
+pyroscope = { version = "2.0", features = ["backend-pprof-rs"] }
