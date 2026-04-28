@@ -74,6 +74,9 @@ jobs:
           tags: |
             type=sha,prefix=sha-,suffix=,format=short
             type=schedule,pattern={{date 'YYYYMMDD'}}
+            # Rolling tag so Argo Image Updater can track digest changes on a
+            # stable reference rather than a per-commit tag.
+            type=raw,value=master,enable={{is_default_branch}}
 
       - name: Build (and push if on master)
         id: docker_build
