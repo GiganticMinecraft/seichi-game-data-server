@@ -19,6 +19,6 @@ tracing = "0.1.41"
 # environment variables; if unset, the exporters stay disabled and the binary
 # falls back to plain stdout logging.
 init-tracing-opentelemetry = { version = "0.37", features = ["otlp", "tracing_subscriber_ext", "tracer", "metrics", "logs", "tls-webpki-roots"] }
-tonic-tracing-opentelemetry = "0.32"
+tonic-tracing-opentelemetry = { version = "0.32", features = ["tracing_level_info"] }
 opentelemetry = "0.31"
 pyroscope = { version = "2.0", features = ["backend-pprof-rs"] }
