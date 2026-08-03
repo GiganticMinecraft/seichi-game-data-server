@@ -1,20 +1,24 @@
 version: v2
+# 各プラグインは crates.io の protoc-gen-prost / protoc-gen-tonic / protoc-gen-prost-crate を
+# ローカルにインストールして使う (BSR のリモートプラグイン実行は未認証だと 10 req/h/IP の
+# レート制限があり、egress IP を共有する GitHub ホストランナーでは不安定になるため)。
+# インストールは server/install-buf-plugins.sh で行う (バージョンはそこで固定)。
 plugins:
-  - remote: buf.build/community/neoeinstein-prost:v0.5.0
+  - local: protoc-gen-prost
     out: src/gen
     # https://github.com/neoeinstein/protoc-gen-prost/tree/main/protoc-gen-prost#options
     opt:
       - compile_well_known_types
       - extern_path=.google.protobuf=::pbjson_types
       - file_descriptor_set
-  - remote: buf.build/community/neoeinstein-tonic:v0.5.0
+  - local: protoc-gen-tonic
     out: src/gen
     # https://github.com/neoeinstein/protoc-gen-prost/tree/main/protoc-gen-tonic
     opt:
       - compile_well_known_types
       - extern_path=.google.protobuf=::pbjson_types
       - no_client=true
-  - remote: buf.build/community/neoeinstein-prost-crate:v0.5.0
+  - local: protoc-gen-prost-crate
     out: src/gen
     # https://github.com/neoeinstein/protoc-gen-prost/tree/main/protoc-gen-prost-crate
     opt:

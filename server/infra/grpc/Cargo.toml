@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-# pbjson-types, prost, tonic, tonic-prost は `<= 1.0.0` の範囲でminor versionが上がった場合全て一緒にbumpすること。buf.gen.yamlの
-# バージョンをあげることも忘れずに。
+# pbjson-types, prost, tonic, tonic-prost は `<= 1.0.0` の範囲でminor versionが上がった場合全て一緒にbumpすること。
+# server/install-buf-plugins.sh で固定している protoc-gen-prost 系プラグインのバージョンをあげることも忘れずに。
 
 domain = { path = "../../domain" }
 
