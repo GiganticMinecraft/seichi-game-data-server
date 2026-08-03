@@ -14,8 +14,9 @@ COPY --from=buf --link /usr/local/bin/buf /usr/local/bin/
 # We need protoc because cargo chef cook will require it to build some modules (e.g. pbjson-types)
 RUN apt-get update && apt-get install -y --no-install-recommends protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
-# protoc plugins used by `buf generate` (see infra/grpc/buf.gen.yaml); versions must match the CI workflow
-RUN cargo install protoc-gen-prost@0.5.0 protoc-gen-tonic@0.5.0 protoc-gen-prost-crate@0.5.0
+# protoc plugins used by `buf generate`; versions are pinned in install-buf-plugins.sh
+COPY --link install-buf-plugins.sh ./
+RUN ./install-buf-plugins.sh
 
 COPY --from=planner --link /app/recipe.json recipe.json
 

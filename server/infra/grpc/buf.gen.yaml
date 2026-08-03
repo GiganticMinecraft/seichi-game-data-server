@@ -2,7 +2,7 @@ version: v2
 # 各プラグインは crates.io の protoc-gen-prost / protoc-gen-tonic / protoc-gen-prost-crate を
 # ローカルにインストールして使う (BSR のリモートプラグイン実行は未認証だと 10 req/h/IP の
 # レート制限があり、egress IP を共有する GitHub ホストランナーでは不安定になるため)。
-# インストールするバージョンは CI (ci.yaml) と Dockerfile を参照。
+# インストールは server/install-buf-plugins.sh で行う (バージョンはそこで固定)。
 plugins:
   - local: protoc-gen-prost
     out: src/gen

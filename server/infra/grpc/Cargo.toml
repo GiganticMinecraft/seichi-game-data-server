@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 # pbjson-types, prost, tonic, tonic-prost は `<= 1.0.0` の範囲でminor versionが上がった場合全て一緒にbumpすること。
-# CI (ci.yaml) と Dockerfile でインストールしている protoc-gen-prost 系プラグインのバージョンをあげることも忘れずに。
+# server/install-buf-plugins.sh で固定している protoc-gen-prost 系プラグインのバージョンをあげることも忘れずに。
 
 domain = { path = "../../domain" }
 
