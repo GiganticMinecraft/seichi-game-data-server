@@ -19,7 +19,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           # TODO: read from rust-toolchain.toml
-          toolchain: 1.97.1
+          toolchain: 1.98.1
           components: clippy, rustfmt
 
       # > selecting a toolchain either by action or manual `rustup` calls should happen
