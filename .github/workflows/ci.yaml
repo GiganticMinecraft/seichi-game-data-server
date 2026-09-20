@@ -60,7 +60,7 @@ jobs:
   build-image:
     name: Build docker image (and publish on master)
     needs: [ app-lint-and-test ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: checkout
         uses: actions/checkout@v7
