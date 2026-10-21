@@ -30,4 +30,9 @@ RUN cargo build --release
 FROM gcr.io/distroless/cc
 LABEL org.opencontainers.image.source=https://github.com/GiganticMinecraft/seichi-game-api
 COPY --from=build-env --link /app/target/release/seichi-game-api /
+# Reported as the OpenTelemetry `service.version` resource attribute. Declared
+# in the final stage only so that a new commit does not invalidate the cached
+# build layers. CI passes the commit SHA; local builds fall back to "dev".
+ARG GIT_SHA=dev
+ENV SERVICE_VERSION=${GIT_SHA}
 CMD ["./seichi-game-api"]

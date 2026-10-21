@@ -1194,8 +1194,10 @@ dependencies = [
  "chrono",
  "config",
  "domain",
+ "opentelemetry",
  "sqlx",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1205,7 +1207,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61a291c5d51acf9f8fac7fc38716eb00f6777b9adc92efba632c20f787b59938"
 dependencies = [
  "opentelemetry",
- "opentelemetry-appender-tracing",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
  "opentelemetry-stdout",
@@ -1569,18 +1570,6 @@ dependencies = [
  "pin-project-lite",
  "thiserror",
  "tracing",
-]
-
-[[package]]
-name = "opentelemetry-appender-tracing"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2b304e8d8f11326ba366a99ca5c7aaf7cd397b67268a332437175aeb42a40db"
-dependencies = [
- "opentelemetry",
- "tracing",
- "tracing-core",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2342,10 +2331,12 @@ dependencies = [
  "infra_repository_impl",
  "init-tracing-opentelemetry",
  "opentelemetry",
+ "pin-project-lite",
  "pyroscope",
  "tokio",
  "tonic",
  "tonic-tracing-opentelemetry",
+ "tower",
  "tracing",
  "tracing-subscriber",
 ]

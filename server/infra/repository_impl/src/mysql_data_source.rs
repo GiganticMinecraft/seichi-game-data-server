@@ -12,7 +12,11 @@ use sqlx::mysql::{MySqlPoolOptions, MySqlRow};
 use sqlx::pool::PoolConnection;
 use sqlx::query::Map;
 use sqlx::{IntoArguments, MySql, Pool, Row};
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use tracing::Instrument;
+use tracing::field::Empty;
+
+use crate::metrics::{DbOperationMetrics, sqlx_error_type};
 
 /// プールから接続を取り出すまでの待ち時間の上限。
 ///
@@ -50,18 +54,83 @@ async fn create_mysql_connection_pool(
         .await?)
 }
 
+/// 実行する SQL と、span / メトリクスに載せるその要約。
+struct Statement {
+    /// 実行する SQL。パラメータを持たない固定文字列なので、そのまま
+    /// `db.query.text` として span に載せてよい。
+    sql: &'static str,
+    /// `db.query.summary`。span 名にも使う (`{operation} {table}` の形)。
+    summary: &'static str,
+    /// `db.collection.name`。JOIN のように対象テーブルが 1 つに決まらない
+    /// クエリでは `None` にする (semantic conventions の要件)。
+    collection: Option<&'static str>,
+}
+
 #[derive(Debug, Clone)]
 struct MySqlDataSource {
     connection_pool: Pool<MySql>,
     query_timeout: Duration,
+    /// `db.namespace` / `server.address` / `server.port` として span に載せる。
+    database_name: String,
+    server_address: String,
+    server_port: u16,
+    metrics: DbOperationMetrics,
 }
 
 impl MySqlDataSource {
-    /// `query` を実行して全行を取得する。
+    /// `statement` を実行して全行を取得する。
     ///
     /// 接続の取得は `ACQUIRE_TIMEOUT`、クエリの実行は `query_timeout` で打ち切る。
     /// クエリが時間切れになった場合は [`QueryTimeoutError`] を返す。
+    ///
+    /// 接続の取得からクエリの完了までを OpenTelemetry の client span
+    /// (呼び出し元の gRPC server span の子) で囲み、所要時間を
+    /// `db.client.operation.duration` に記録する。
     async fn fetch_all_with_timeout<F, O, A>(
+        &self,
+        statement: &Statement,
+        query: Map<'static, MySql, F, A>,
+    ) -> anyhow::Result<Vec<O>>
+    where
+        F: FnMut(MySqlRow) -> Result<O, sqlx::Error> + Send + 'static,
+        O: Send + Unpin + 'static,
+        A: 'static + Send + IntoArguments<MySql>,
+    {
+        let span = tracing::info_span!(
+            "db.query",
+            otel.name = statement.summary,
+            otel.kind = "client",
+            otel.status_code = Empty,
+            otel.status_description = Empty,
+            // `db.system` は旧 semantic conventions の名前だが、Tempo の
+            // service graph が DB を仮想ノードとして扱うのに使うので残す。
+            db.system = "mysql",
+            db.system.name = "mysql",
+            db.namespace = %self.database_name,
+            db.collection.name = statement.collection,
+            db.operation.name = "SELECT",
+            db.query.summary = statement.summary,
+            db.query.text = statement.sql,
+            server.address = %self.server_address,
+            server.port = i64::from(self.server_port),
+            db.response.returned_rows = Empty,
+            error.type = Empty,
+        );
+
+        let operation = DbOperation {
+            span: span.clone(),
+            start: Instant::now(),
+            metrics: &self.metrics,
+            collection: statement.collection,
+            finished: false,
+        };
+        let result = self.fetch_all_inner(query).instrument(span).await;
+        operation.finish(&result);
+
+        result
+    }
+
+    async fn fetch_all_inner<F, O, A>(
         &self,
         query: Map<'static, MySql, F, A>,
     ) -> anyhow::Result<Vec<O>>
@@ -83,6 +152,62 @@ impl MySqlDataSource {
                 timeout: self.query_timeout,
             }
             .into()),
+        }
+    }
+}
+
+/// 1 回の DB 操作の span とメトリクスの後始末。
+///
+/// 完了したら [`DbOperation::finish`] で結果を記録する。呼び出し元の future
+/// ごと drop された場合 (クライアントの `grpc-timeout` や切断、サーバーの
+/// `REQUEST_TIMEOUT` による打ち切り) は `Drop` で `error.type = "cancelled"`
+/// として記録する。
+struct DbOperation<'a> {
+    span: tracing::Span,
+    start: Instant,
+    metrics: &'a DbOperationMetrics,
+    collection: Option<&'static str>,
+    finished: bool,
+}
+
+impl DbOperation<'_> {
+    fn finish<T>(mut self, result: &anyhow::Result<Vec<T>>) {
+        self.finished = true;
+        match result {
+            Ok(rows) => {
+                self.span.record(
+                    "db.response.returned_rows",
+                    i64::try_from(rows.len()).unwrap_or(i64::MAX),
+                );
+                self.record(None);
+            }
+            Err(e) => {
+                let error_type = if e.is::<QueryTimeoutError>() {
+                    "timeout"
+                } else {
+                    e.downcast_ref::<sqlx::Error>()
+                        .map_or("_OTHER", sqlx_error_type)
+                };
+                self.span.record("otel.status_description", e.to_string());
+                self.record(Some(error_type));
+            }
+        }
+    }
+
+    fn record(&self, error_type: Option<&'static str>) {
+        if let Some(error_type) = error_type {
+            self.span.record("otel.status_code", "ERROR");
+            self.span.record("error.type", error_type);
+        }
+        self.metrics
+            .record(self.start.elapsed(), self.collection, error_type);
+    }
+}
+
+impl Drop for DbOperation<'_> {
+    fn drop(&mut self) {
+        if !self.finished {
+            self.record(Some("cancelled"));
         }
     }
 }
@@ -118,90 +243,114 @@ impl Drop for CloseUnlessReleased {
 #[async_trait]
 impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerLastQuit>> {
-        let query =
-            sqlx::query::<MySql>("SELECT name, uuid, lastquit From playerdata").try_map(|row| {
-                Ok(PlayerLastQuit {
-                    player: Player {
-                        // varchar(128) -> String
-                        uuid: row.try_get("uuid")?,
-                        // varchar(30) -> String
-                        last_known_name: row.try_get("name")?,
-                    },
-                    // datetime -> String
-                    rfc_3339_date_time: row.try_get::<DateTime<Utc>, _>("lastquit")?.to_rfc3339(),
-                })
-            });
-        self.fetch_all_with_timeout(query).await
+        const STATEMENT: Statement = Statement {
+            sql: "SELECT name, uuid, lastquit From playerdata",
+            summary: "SELECT playerdata",
+            collection: Some("playerdata"),
+        };
+
+        let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
+            Ok(PlayerLastQuit {
+                player: Player {
+                    // varchar(128) -> String
+                    uuid: row.try_get("uuid")?,
+                    // varchar(30) -> String
+                    last_known_name: row.try_get("name")?,
+                },
+                // datetime -> String
+                rfc_3339_date_time: row.try_get::<DateTime<Utc>, _>("lastquit")?.to_rfc3339(),
+            })
+        });
+        self.fetch_all_with_timeout(&STATEMENT, query).await
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBreakCount>> {
-        let query = sqlx::query::<MySql>("SELECT name, uuid, totalbreaknum From playerdata")
-            .try_map(|row| {
-                Ok(PlayerBreakCount {
-                    player: Player {
-                        // varchar(128) -> String
-                        uuid: row.try_get("uuid")?,
-                        // varchar(30) -> String
-                        last_known_name: row.try_get("name")?,
-                    },
-                    // bigint -> i64 -> u64
-                    // because bigint corresponds to i64 (https://docs.rs/sqlx/0.6.1/sqlx/mysql/types/index.html)
-                    break_count: row.try_get::<i64, _>("totalbreaknum")? as u64,
-                })
-            });
-        self.fetch_all_with_timeout(query).await
+        const STATEMENT: Statement = Statement {
+            sql: "SELECT name, uuid, totalbreaknum From playerdata",
+            summary: "SELECT playerdata",
+            collection: Some("playerdata"),
+        };
+
+        let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
+            Ok(PlayerBreakCount {
+                player: Player {
+                    // varchar(128) -> String
+                    uuid: row.try_get("uuid")?,
+                    // varchar(30) -> String
+                    last_known_name: row.try_get("name")?,
+                },
+                // bigint -> i64 -> u64
+                // because bigint corresponds to i64 (https://docs.rs/sqlx/0.6.1/sqlx/mysql/types/index.html)
+                break_count: row.try_get::<i64, _>("totalbreaknum")? as u64,
+            })
+        });
+        self.fetch_all_with_timeout(&STATEMENT, query).await
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBuildCount>> {
-        let query =
-            sqlx::query::<MySql>("SELECT name, uuid, build_count From playerdata").try_map(|row| {
-                Ok(PlayerBuildCount {
-                    player: Player {
-                        // varchar(128) -> String
-                        uuid: row.try_get("uuid")?,
-                        // varchar(30) -> String
-                        last_known_name: row.try_get("name")?,
-                    },
-                    // double -> u64
-                    build_count: row.try_get::<f64, _>("build_count")?.round() as u64,
-                })
-            });
-        self.fetch_all_with_timeout(query).await
+        const STATEMENT: Statement = Statement {
+            sql: "SELECT name, uuid, build_count From playerdata",
+            summary: "SELECT playerdata",
+            collection: Some("playerdata"),
+        };
+
+        let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
+            Ok(PlayerBuildCount {
+                player: Player {
+                    // varchar(128) -> String
+                    uuid: row.try_get("uuid")?,
+                    // varchar(30) -> String
+                    last_known_name: row.try_get("name")?,
+                },
+                // double -> u64
+                build_count: row.try_get::<f64, _>("build_count")?.round() as u64,
+            })
+        });
+        self.fetch_all_with_timeout(&STATEMENT, query).await
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerPlayTicks>> {
-        let query =
-            sqlx::query::<MySql>("SELECT name, uuid, playtick From playerdata").try_map(|row| {
-                Ok(PlayerPlayTicks {
-                    player: Player {
-                        // varchar(128) -> String
-                        uuid: row.try_get("uuid")?,
-                        // varchar(30) -> String
-                        last_known_name: row.try_get("name")?,
-                    },
-                    // i64 -> u64
-                    play_ticks: row.try_get::<i64, _>("playtick")? as u64,
-                })
-            });
-        self.fetch_all_with_timeout(query).await
+        const STATEMENT: Statement = Statement {
+            sql: "SELECT name, uuid, playtick From playerdata",
+            summary: "SELECT playerdata",
+            collection: Some("playerdata"),
+        };
+
+        let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
+            Ok(PlayerPlayTicks {
+                player: Player {
+                    // varchar(128) -> String
+                    uuid: row.try_get("uuid")?,
+                    // varchar(30) -> String
+                    last_known_name: row.try_get("name")?,
+                },
+                // i64 -> u64
+                play_ticks: row.try_get::<i64, _>("playtick")? as u64,
+            })
+        });
+        self.fetch_all_with_timeout(&STATEMENT, query).await
     }
 }
 
 #[async_trait]
 impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerVoteCount>> {
-        const SQL: &str = "SELECT playerdata.name, playerdata.uuid, vote_number From vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid";
+        const STATEMENT: Statement = Statement {
+            sql: "SELECT playerdata.name, playerdata.uuid, vote_number From vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid",
+            summary: "SELECT vote playerdata",
+            collection: None,
+        };
 
-        let query = sqlx::query::<MySql>(SQL).try_map(|row| {
+        let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
             Ok(PlayerVoteCount {
                 player: Player {
                     // varchar(128) -> String
@@ -213,7 +362,7 @@ impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
                 vote_count: row.try_get::<i32, _>("vote_number")? as u64,
             })
         });
-        self.fetch_all_with_timeout(query).await
+        self.fetch_all_with_timeout(&STATEMENT, query).await
     }
 }
 
@@ -242,5 +391,9 @@ pub async fn from_config(config: &SourceDatabaseConfig) -> anyhow::Result<impl C
     Ok(MySqlDataSource {
         connection_pool,
         query_timeout: Duration::from_secs(config.query_timeout_secs),
+        database_name: config.database_name.clone(),
+        server_address: config.host.clone(),
+        server_port: config.port.0,
+        metrics: DbOperationMetrics::new(&config.database_name),
     })
 }

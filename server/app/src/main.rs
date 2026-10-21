@@ -14,6 +14,8 @@ use tokio::sync::watch;
 use tonic::transport::Server;
 use tonic_tracing_opentelemetry::middleware::{filters, server::OtelGrpcLayer};
 
+mod rpc_metrics;
+
 // Continuous profiling agent (pyroscope-rs).
 //
 // Pushes pprof CPU profiles to a Pyroscope server while the returned guard is
@@ -176,6 +178,7 @@ async fn run(shutdown: watch::Receiver<bool>) -> anyhow::Result<()> {
         .http2_keepalive_timeout(Some(HTTP2_KEEPALIVE_TIMEOUT))
         .tcp_keepalive(Some(TCP_KEEPALIVE))
         .layer(OtelGrpcLayer::default().filter(filters::reject_healthcheck))
+        .layer(rpc_metrics::RpcMetricsLayer::new())
         .add_service(ReadServiceServer::new(service))
         .serve_with_shutdown(serve_address, shutdown_requested(shutdown.clone()));
     tokio::pin!(serve);
@@ -200,15 +203,23 @@ async fn run(shutdown: watch::Receiver<bool>) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // OpenTelemetry pipeline: traces + metrics + logs over OTLP, plus JSON
-    // logs to stdout (picked up by the cluster's log scraper). Configuration
-    // is driven by `OTEL_*` environment variables (OTEL_SERVICE_NAME,
-    // OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, ...). Without
-    // those vars only the stdout sink is active, so local runs do not require
-    // an OTLP collector.
+    // OpenTelemetry pipeline: traces + metrics over OTLP, plus JSON logs to
+    // stdout. Logs are deliberately not exported over OTLP (the `logs`
+    // feature of init-tracing-opentelemetry is off): the cluster's log
+    // scraper already ships stdout to Loki, and sending both stored every
+    // line twice. Each stdout line carries the `trace_id` / `span_id` of the
+    // span it was emitted in, so logs still link to traces.
+    //
+    // Configuration is driven by `OTEL_*` environment variables
+    // (OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT,
+    // OTEL_EXPORTER_OTLP_PROTOCOL, ...). Without those vars only the stdout
+    // sink is active, so local runs do not require an OTLP collector.
+    // `service.version` is read from `SERVICE_VERSION` (set to the git commit
+    // in the container image).
     let otel_guard = init_tracing_opentelemetry::TracingConfig::default()
         .with_json_format()
         .with_stdout()
+        .with_fmt_trace_context(init_tracing_opentelemetry::config::FmtTraceContext::TraceIdSpanId)
         .with_log_directives(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
         .with_otel(true)
         .with_metrics(true)
@@ -234,8 +245,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("shutdown complete; flushing telemetry");
 
-    // Flush the OpenTelemetry pipeline first so the logs above reach the
-    // collector, then stop the profiler (which uploads its last profile).
+    // Flush the OpenTelemetry pipeline first so the last spans and metrics
+    // reach the collector, then stop the profiler (which uploads its last
+    // profile).
     // Done explicitly so the order also holds when `run` fails.
     drop(otel_guard);
     drop(profiler_guard);

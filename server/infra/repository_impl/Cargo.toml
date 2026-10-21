@@ -12,3 +12,5 @@ async-trait = "0.1.85"
 chrono = "0.4.39"
 tokio = { version = "1.43.0", features = ["time"] }
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "mysql", "chrono"] }
+opentelemetry = "0.33"
+tracing = "0.1.41"
