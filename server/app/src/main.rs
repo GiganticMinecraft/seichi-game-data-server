@@ -97,6 +97,28 @@ async fn initialize_database_read_service(
 /// when stopped, still finishes before SIGKILL.
 const DRAIN_TIMEOUT: Duration = Duration::from_secs(15);
 
+/// Upper bound on how long a single RPC may take on the server side.
+///
+/// A safety net on top of the per-query timeout (`DB_QUERY_TIMEOUT_SECS`,
+/// default 60s) plus the 5s pool acquire timeout, so it must stay longer than
+/// their sum (checked at startup). It is also shorter than the longest
+/// client-side timeout (conifers, 120s), so a stuck RPC is cut by the server
+/// and returned to the caller as `CANCELLED` ("Timeout expired") instead of
+/// being left running after the caller gave up. tonic does not log this, which
+/// is another reason for the DB timeouts to fire first. tonic also honours a
+/// shorter `grpc-timeout` header sent by the client.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
+
+/// Interval and ack timeout of HTTP/2 PING frames sent to clients, so that
+/// connections whose peer silently disappeared (e.g. a pod that was killed
+/// without closing its sockets) are detected and closed.
+const HTTP2_KEEPALIVE_INTERVAL: Duration = Duration::from_secs(60);
+const HTTP2_KEEPALIVE_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// TCP keepalive on accepted sockets, as a lower-level backstop for the same
+/// half-open connection problem.
+const TCP_KEEPALIVE: Duration = Duration::from_secs(60);
+
 /// Resolves when the process receives SIGTERM (sent by the kubelet on pod
 /// termination) or SIGINT (Ctrl-C in local runs).
 async fn shutdown_signal(mut sigterm: Signal) {
@@ -126,6 +148,13 @@ async fn run(shutdown: watch::Receiver<bool>) -> anyhow::Result<()> {
     tracing::info!("Reading config...");
     let config = AppConfig::from_env()?;
 
+    let db_timeout = Duration::from_secs(config.source_database_config.query_timeout_secs)
+        + infra_repository_impl::mysql_data_source::ACQUIRE_TIMEOUT;
+    anyhow::ensure!(
+        db_timeout < REQUEST_TIMEOUT,
+        "DB_QUERY_TIMEOUT_SECS plus the pool acquire timeout ({db_timeout:?}) must be shorter than the gRPC request timeout ({REQUEST_TIMEOUT:?})"
+    );
+
     // Connecting to MySQL can block for a while; stop right away if a
     // shutdown is requested in the meantime.
     let service = tokio::select! {
@@ -142,6 +171,10 @@ async fn run(shutdown: watch::Receiver<bool>) -> anyhow::Result<()> {
     tracing::info!(%serve_address, "Server will be listening");
 
     let serve = Server::builder()
+        .timeout(REQUEST_TIMEOUT)
+        .http2_keepalive_interval(Some(HTTP2_KEEPALIVE_INTERVAL))
+        .http2_keepalive_timeout(Some(HTTP2_KEEPALIVE_TIMEOUT))
+        .tcp_keepalive(Some(TCP_KEEPALIVE))
         .layer(OtelGrpcLayer::default().filter(filters::reject_healthcheck))
         .add_service(ReadServiceServer::new(service))
         .serve_with_shutdown(serve_address, shutdown_requested(shutdown.clone()));

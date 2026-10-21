@@ -1177,12 +1177,12 @@ dependencies = [
  "anyhow",
  "async-trait",
  "domain",
- "log",
  "pbjson-types",
  "prost",
  "serde",
  "tonic",
  "tonic-prost",
+ "tracing",
 ]
 
 [[package]]
@@ -1195,6 +1195,7 @@ dependencies = [
  "config",
  "domain",
  "sqlx",
+ "tokio",
 ]
 
 [[package]]

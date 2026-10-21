@@ -39,6 +39,28 @@ pub struct SourceDatabaseConfig {
     pub database_name: String,
     pub user: String,
     pub password: String,
+    /// `DB_POOL_MAX_CONNECTIONS`: コネクションプールの最大接続数。
+    ///
+    /// 既定値 5 は従来のハードコード値と同じ。
+    #[serde(default = "default_pool_max_connections")]
+    pub pool_max_connections: u32,
+    /// `DB_QUERY_TIMEOUT_SECS`: 1 クエリ (`fetch_all`) の制限時間 (秒)。
+    ///
+    /// どのクエリも `playerdata` を全件 SELECT するので、行数が増えても
+    /// 正常系で打ち切られないよう既定値は 60 秒と長めにしている。
+    /// これに接続取得の待ち時間 (5 秒) を足した値は、gRPC サーバー側の
+    /// リクエストタイムアウト (`main.rs` の `REQUEST_TIMEOUT`、90 秒) より
+    /// 短くなければならない (起動時に検査する)。
+    #[serde(default = "default_query_timeout_secs")]
+    pub query_timeout_secs: u64,
+}
+
+const fn default_pool_max_connections() -> u32 {
+    5
+}
+
+const fn default_query_timeout_secs() -> u64 {
+    60
 }
 
 impl FromEnvLikeKeyValuePairs for SourceDatabaseConfig {
@@ -79,6 +101,27 @@ mod test {
             ("DB_PASSWORD".to_string(), "$tr0ngpAssw0rd".to_string()),
         ];
 
-        AppConfig::from_iter(setting.into_iter()).unwrap();
+        let config = AppConfig::from_iter(setting.into_iter()).unwrap();
+
+        assert_eq!(config.source_database_config.pool_max_connections, 5);
+        assert_eq!(config.source_database_config.query_timeout_secs, 60);
+    }
+
+    #[test]
+    fn read_db_timeouts_from_iterator() {
+        let setting = [
+            ("DB_HOST".to_string(), "example.com".to_string()),
+            ("DB_PORT".to_string(), "3307".to_string()),
+            ("DB_DATABASE_NAME".to_string(), "db".to_string()),
+            ("DB_USER".to_string(), "bff".to_string()),
+            ("DB_PASSWORD".to_string(), "$tr0ngpAssw0rd".to_string()),
+            ("DB_POOL_MAX_CONNECTIONS".to_string(), "10".to_string()),
+            ("DB_QUERY_TIMEOUT_SECS".to_string(), "2".to_string()),
+        ];
+
+        let config = SourceDatabaseConfig::from_iter(setting.into_iter()).unwrap();
+
+        assert_eq!(config.pool_max_connections, 10);
+        assert_eq!(config.query_timeout_secs, 2);
     }
 }
