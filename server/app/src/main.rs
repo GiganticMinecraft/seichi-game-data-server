@@ -86,6 +86,31 @@ async fn initialize_database_read_service(
     })
 }
 
+/// Resolves when the process receives SIGTERM (sent by the kubelet on pod
+/// termination) or SIGINT (Ctrl-C in local runs).
+///
+/// The binary runs as PID 1 in a distroless image, where the kernel ignores
+/// signals without an installed handler, so SIGTERM has to be handled here
+/// for the pod to stop before `terminationGracePeriodSeconds` elapses.
+async fn shutdown_signal() {
+    use tokio::signal::unix::{SignalKind, signal};
+
+    let mut sigterm = signal(SignalKind::terminate()).expect("Installing SIGTERM handler");
+
+    let signal_name = tokio::select! {
+        _ = sigterm.recv() => "SIGTERM",
+        result = tokio::signal::ctrl_c() => {
+            result.expect("Installing SIGINT handler");
+            "SIGINT"
+        }
+    };
+
+    tracing::info!(
+        signal = signal_name,
+        "shutdown signal received; draining in-flight requests"
+    );
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // OpenTelemetry pipeline: traces + metrics + logs over OTLP, plus JSON
@@ -94,7 +119,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, ...). Without
     // those vars only the stdout sink is active, so local runs do not require
     // an OTLP collector.
-    let _otel_guard = init_tracing_opentelemetry::TracingConfig::default()
+    let otel_guard = init_tracing_opentelemetry::TracingConfig::default()
         .with_json_format()
         .with_stdout()
         .with_log_directives(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
@@ -102,7 +127,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_metrics(true)
         .init_subscriber()?;
 
-    let _profiler_guard = profiler::try_start()?;
+    let profiler_guard = profiler::try_start()?;
 
     tracing::info!("Reading config...");
     let config = AppConfig::from_env()?;
@@ -120,8 +145,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Server::builder()
         .layer(OtelGrpcLayer::default().filter(filters::reject_healthcheck))
         .add_service(ReadServiceServer::new(service))
-        .serve(serve_address)
+        .serve_with_shutdown(serve_address, shutdown_signal())
         .await?;
+
+    tracing::info!("shutdown complete; flushing telemetry");
+
+    // Flush the OpenTelemetry pipeline first so the spans/logs above reach the
+    // collector, then stop the profiler (which uploads its last profile).
+    drop(otel_guard);
+    drop(profiler_guard);
 
     Ok(())
 }
