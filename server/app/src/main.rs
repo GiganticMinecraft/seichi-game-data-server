@@ -2,11 +2,15 @@
 #![warn(clippy::nursery, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::cargo_common_metadata)]
 
+use anyhow::Context;
 use config::{AppConfig, FromEnv, SourceDatabaseConfig};
 use infra_grpc::buf_generated::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
     ReadService, ReadServiceServer,
 };
 use infra_grpc::read_service::ReadServiceImpl;
+use std::time::Duration;
+use tokio::signal::unix::{Signal, SignalKind, signal};
+use tokio::sync::watch;
 use tonic::transport::Server;
 use tonic_tracing_opentelemetry::middleware::{filters, server::OtelGrpcLayer};
 
@@ -86,6 +90,81 @@ async fn initialize_database_read_service(
     })
 }
 
+/// How long in-flight RPCs may keep running after a shutdown signal before
+/// the server is dropped. Kept well below the pod's
+/// `terminationGracePeriodSeconds` (30s) so that the telemetry flush, and in
+/// particular the pyroscope agent, which waits for its next 10s report cycle
+/// when stopped, still finishes before SIGKILL.
+const DRAIN_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// Resolves when the process receives SIGTERM (sent by the kubelet on pod
+/// termination) or SIGINT (Ctrl-C in local runs).
+async fn shutdown_signal(mut sigterm: Signal) {
+    let signal_name = tokio::select! {
+        _ = sigterm.recv() => "SIGTERM",
+        result = tokio::signal::ctrl_c() => {
+            if let Err(e) = result {
+                tracing::error!(error = %e, "failed to listen for SIGINT");
+            }
+            "SIGINT"
+        }
+    };
+
+    tracing::info!(
+        signal = signal_name,
+        "shutdown signal received; draining in-flight requests"
+    );
+}
+
+/// Resolves once `shutdown_signal` has fired.
+async fn shutdown_requested(mut rx: watch::Receiver<bool>) {
+    // The sender is only dropped after it has sent `true`.
+    let _ = rx.wait_for(|requested| *requested).await;
+}
+
+async fn run(shutdown: watch::Receiver<bool>) -> anyhow::Result<()> {
+    tracing::info!("Reading config...");
+    let config = AppConfig::from_env()?;
+
+    // Connecting to MySQL can block for a while; stop right away if a
+    // shutdown is requested in the meantime.
+    let service = tokio::select! {
+        service = initialize_database_read_service(&config.source_database_config) => {
+            service.context("Initializing read service")?
+        }
+        () = shutdown_requested(shutdown.clone()) => return Ok(()),
+    };
+
+    let serve_address = format!("{}:{}", config.http_config.host, config.http_config.port.0)
+        .parse()
+        .context("Parsing serve address from config")?;
+
+    tracing::info!(%serve_address, "Server will be listening");
+
+    let serve = Server::builder()
+        .layer(OtelGrpcLayer::default().filter(filters::reject_healthcheck))
+        .add_service(ReadServiceServer::new(service))
+        .serve_with_shutdown(serve_address, shutdown_requested(shutdown.clone()));
+    tokio::pin!(serve);
+
+    tokio::select! {
+        biased;
+        result = &mut serve => result?,
+        () = shutdown_requested(shutdown) => {
+            if let Ok(result) = tokio::time::timeout(DRAIN_TIMEOUT, &mut serve).await {
+                result?;
+            } else {
+                tracing::warn!(
+                    timeout = ?DRAIN_TIMEOUT,
+                    "in-flight requests did not finish in time; abandoning them"
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // OpenTelemetry pipeline: traces + metrics + logs over OTLP, plus JSON
@@ -94,7 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL, ...). Without
     // those vars only the stdout sink is active, so local runs do not require
     // an OTLP collector.
-    let _otel_guard = init_tracing_opentelemetry::TracingConfig::default()
+    let otel_guard = init_tracing_opentelemetry::TracingConfig::default()
         .with_json_format()
         .with_stdout()
         .with_log_directives(std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into()))
@@ -102,26 +181,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_metrics(true)
         .init_subscriber()?;
 
-    let _profiler_guard = profiler::try_start()?;
+    let profiler_guard = profiler::try_start()?;
 
-    tracing::info!("Reading config...");
-    let config = AppConfig::from_env()?;
+    // The binary runs as PID 1 in a distroless image, where the kernel ignores
+    // signals that have no handler, so SIGTERM must be handled here for the
+    // pod to stop before `terminationGracePeriodSeconds` elapses. Install the
+    // handler before anything slow (such as connecting to MySQL) happens.
+    let sigterm = signal(SignalKind::terminate())?;
+    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+    tokio::spawn(async move {
+        shutdown_signal(sigterm).await;
+        let _ = shutdown_tx.send(true);
+    });
 
-    let service = initialize_database_read_service(&config.source_database_config)
-        .await
-        .expect("Initializing read service");
+    let result = run(shutdown_rx).await;
+    if let Err(e) = &result {
+        tracing::error!(error = ?e, "server exited with an error");
+    }
 
-    let serve_address = format!("{}:{}", config.http_config.host, config.http_config.port.0)
-        .parse()
-        .expect("Parsing serve address from config");
+    tracing::info!("shutdown complete; flushing telemetry");
 
-    tracing::info!(%serve_address, "Server will be listening");
+    // Flush the OpenTelemetry pipeline first so the logs above reach the
+    // collector, then stop the profiler (which uploads its last profile).
+    // Done explicitly so the order also holds when `run` fails.
+    drop(otel_guard);
+    drop(profiler_guard);
 
-    Server::builder()
-        .layer(OtelGrpcLayer::default().filter(filters::reject_healthcheck))
-        .add_service(ReadServiceServer::new(service))
-        .serve(serve_address)
-        .await?;
-
-    Ok(())
+    Ok(result?)
 }
