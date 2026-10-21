@@ -10,7 +10,7 @@ infra_grpc = { path = "../infra/grpc" }
 infra_repository_impl = { path = "../infra/repository_impl" }
 
 anyhow = "1.0.95"
-tokio = { version = "1.43.0", features = ["rt-multi-thread", "signal"] }
+tokio = { version = "1.43.0", features = ["rt-multi-thread", "signal", "sync", "time", "macros"] }
 tonic = { version = "0.14.0", features = ["gzip"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing = "0.1.41"
