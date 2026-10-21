@@ -2327,6 +2327,7 @@ dependencies = [
  "anyhow",
  "config",
  "domain",
+ "http-body",
  "infra_grpc",
  "infra_repository_impl",
  "init-tracing-opentelemetry",

@@ -66,6 +66,17 @@ struct Statement {
     collection: Option<&'static str>,
 }
 
+impl Statement {
+    /// `playerdata` テーブルだけを読む SELECT。
+    const fn select_playerdata(sql: &'static str) -> Self {
+        Self {
+            sql,
+            summary: "SELECT playerdata",
+            collection: Some("playerdata"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct MySqlDataSource {
     connection_pool: Pool<MySql>,
@@ -243,11 +254,8 @@ impl Drop for CloseUnlessReleased {
 #[async_trait]
 impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerLastQuit>> {
-        const STATEMENT: Statement = Statement {
-            sql: "SELECT name, uuid, lastquit From playerdata",
-            summary: "SELECT playerdata",
-            collection: Some("playerdata"),
-        };
+        const STATEMENT: Statement =
+            Statement::select_playerdata("SELECT name, uuid, lastquit From playerdata");
 
         let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
             Ok(PlayerLastQuit {
@@ -268,11 +276,8 @@ impl VecDataSource<PlayerLastQuit> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBreakCount>> {
-        const STATEMENT: Statement = Statement {
-            sql: "SELECT name, uuid, totalbreaknum From playerdata",
-            summary: "SELECT playerdata",
-            collection: Some("playerdata"),
-        };
+        const STATEMENT: Statement =
+            Statement::select_playerdata("SELECT name, uuid, totalbreaknum From playerdata");
 
         let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
             Ok(PlayerBreakCount {
@@ -294,11 +299,8 @@ impl VecDataSource<PlayerBreakCount> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerBuildCount>> {
-        const STATEMENT: Statement = Statement {
-            sql: "SELECT name, uuid, build_count From playerdata",
-            summary: "SELECT playerdata",
-            collection: Some("playerdata"),
-        };
+        const STATEMENT: Statement =
+            Statement::select_playerdata("SELECT name, uuid, build_count From playerdata");
 
         let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
             Ok(PlayerBuildCount {
@@ -319,11 +321,8 @@ impl VecDataSource<PlayerBuildCount> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerPlayTicks>> {
-        const STATEMENT: Statement = Statement {
-            sql: "SELECT name, uuid, playtick From playerdata",
-            summary: "SELECT playerdata",
-            collection: Some("playerdata"),
-        };
+        const STATEMENT: Statement =
+            Statement::select_playerdata("SELECT name, uuid, playtick From playerdata");
 
         let query = sqlx::query::<MySql>(STATEMENT.sql).try_map(|row| {
             Ok(PlayerPlayTicks {

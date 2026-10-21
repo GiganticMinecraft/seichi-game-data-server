@@ -5,7 +5,7 @@
 use anyhow::Context;
 use config::{AppConfig, FromEnv, SourceDatabaseConfig};
 use infra_grpc::buf_generated::gigantic_minecraft::seichi_game_data::v1::read_service_server::{
-    ReadService, ReadServiceServer,
+    ReadService, ReadServiceServer, SERVICE_NAME as READ_SERVICE_NAME,
 };
 use infra_grpc::read_service::ReadServiceImpl;
 use std::time::Duration;
@@ -178,7 +178,7 @@ async fn run(shutdown: watch::Receiver<bool>) -> anyhow::Result<()> {
         .http2_keepalive_timeout(Some(HTTP2_KEEPALIVE_TIMEOUT))
         .tcp_keepalive(Some(TCP_KEEPALIVE))
         .layer(OtelGrpcLayer::default().filter(filters::reject_healthcheck))
-        .layer(rpc_metrics::RpcMetricsLayer::new())
+        .layer(rpc_metrics::RpcMetricsLayer::new(&[READ_SERVICE_NAME]))
         .add_service(ReadServiceServer::new(service))
         .serve_with_shutdown(serve_address, shutdown_requested(shutdown.clone()));
     tokio::pin!(serve);

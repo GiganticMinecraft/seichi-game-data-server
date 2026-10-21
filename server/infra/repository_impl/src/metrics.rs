@@ -8,6 +8,7 @@
 
 use opentelemetry::KeyValue;
 use opentelemetry::metrics::Histogram;
+use std::sync::Arc;
 use std::time::Duration;
 
 /// 秒単位のヒストグラムのバケット境界。
@@ -15,14 +16,15 @@ use std::time::Duration;
 /// semantic conventions が推奨する境界 (5ms から 10s) に、このサービスの
 /// クエリタイムアウト (既定 60s) までを見られるよう 30s / 60s を足したもの。
 /// SDK の既定の境界はミリ秒を想定しているので、秒で記録する場合は明示する。
-pub const DURATION_BUCKETS_SECONDS: [f64; 16] = [
+const DURATION_BUCKETS_SECONDS: [f64; 16] = [
     0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0, 30.0, 60.0,
 ];
 
 #[derive(Debug, Clone)]
 pub struct DbOperationMetrics {
     duration: Histogram<f64>,
-    namespace: String,
+    // 毎回の記録で文字列を複製しないよう Arc で持つ。
+    namespace: Arc<str>,
 }
 
 impl DbOperationMetrics {
@@ -36,7 +38,7 @@ impl DbOperationMetrics {
 
         Self {
             duration,
-            namespace: namespace.to_owned(),
+            namespace: Arc::from(namespace),
         }
     }
 
@@ -52,7 +54,7 @@ impl DbOperationMetrics {
     ) {
         let mut attributes = vec![
             KeyValue::new("db.system.name", "mysql"),
-            KeyValue::new("db.namespace", self.namespace.clone()),
+            KeyValue::new("db.namespace", Arc::clone(&self.namespace)),
             KeyValue::new("db.operation.name", "SELECT"),
         ];
         if let Some(collection) = collection {
