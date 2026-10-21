@@ -9,6 +9,7 @@ use anyhow::{anyhow, ensure};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::mysql::{MySqlPoolOptions, MySqlRow};
+use sqlx::pool::PoolConnection;
 use sqlx::query::Map;
 use sqlx::{IntoArguments, MySql, Pool, Row};
 use std::time::Duration;
@@ -18,7 +19,11 @@ use std::time::Duration;
 /// sqlx の既定値は 30 秒だが、全接続が埋まっている状態で 30 秒も待たせると
 /// 呼び出し元 (publisher はリクエストタイムアウト 30 秒) が先に諦めてしまい、
 /// 失敗の原因がサーバー側で見えなくなる。接続の確立も含めてこの時間で打ち切る。
-const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
+///
+/// sqlx はこの値を起動時の最初の接続 (`connect`) の待ち時間にも使うので、
+/// 起動時に DB へ 5 秒以内につながらなければプロセスはエラーで終了する
+/// (Kubernetes が再起動する)。
+pub const ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
 
 async fn create_mysql_connection_pool(
     config: &SourceDatabaseConfig,
@@ -65,20 +70,43 @@ impl MySqlDataSource {
         O: Send + Unpin + 'static,
         A: 'static + Send + IntoArguments<MySql>,
     {
-        let mut connection = self.connection_pool.acquire().await?;
+        let mut connection = CloseUnlessReleased(Some(self.connection_pool.acquire().await?));
+        let conn = connection.0.as_mut().expect("connection is set above");
 
-        match tokio::time::timeout(self.query_timeout, query.fetch_all(&mut *connection)).await {
-            Ok(result) => result.map_err(|e| anyhow!(e)),
-            Err(_elapsed) => {
-                // 打ち切った時点ではクエリの結果がまだ読み終わっておらず、接続は
-                // 中途半端な状態にある。プールに戻すと sqlx が on-release の ping で
-                // 結果を読み切るまで待ってしまうので、戻さずに閉じる。
-                connection.close_on_drop();
-                Err(QueryTimeoutError {
-                    timeout: self.query_timeout,
-                }
-                .into())
+        match tokio::time::timeout(self.query_timeout, query.fetch_all(&mut **conn)).await {
+            Ok(Ok(rows)) => {
+                connection.release();
+                Ok(rows)
             }
+            Ok(Err(e)) => Err(anyhow!(e)),
+            Err(_elapsed) => Err(QueryTimeoutError {
+                timeout: self.query_timeout,
+            }
+            .into()),
+        }
+    }
+}
+
+/// クエリが最後まで成功したときだけ接続をプールに戻し、それ以外では閉じる。
+///
+/// クエリの途中で打ち切られた接続 (このモジュールのタイムアウトに加えて、
+/// クライアントの `grpc-timeout`・サーバーの `REQUEST_TIMEOUT`・ストリームの
+/// リセットで future ごと drop された場合も含む) は結果を読み切っていない。
+/// そのままプールに戻すと、sqlx が on-release の ping で残りの結果を読み切る
+/// までその接続を使えなくなり、プールが埋まる。なので戻さずに閉じる。
+struct CloseUnlessReleased(Option<PoolConnection<MySql>>);
+
+impl CloseUnlessReleased {
+    fn release(&mut self) {
+        // drop するとプールに戻る。
+        self.0.take();
+    }
+}
+
+impl Drop for CloseUnlessReleased {
+    fn drop(&mut self) {
+        if let Some(connection) = self.0.as_mut() {
+            connection.close_on_drop();
         }
     }
 }
@@ -171,20 +199,20 @@ impl VecDataSource<PlayerPlayTicks> for MySqlDataSource {
 #[async_trait]
 impl VecDataSource<PlayerVoteCount> for MySqlDataSource {
     async fn fetch(&self) -> anyhow::Result<Vec<PlayerVoteCount>> {
-        let query = sqlx::query::<MySql>("SELECT playerdata.name, playerdata.uuid, vote_number From vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid")
-            .try_map(|row| {
-                Ok(PlayerVoteCount {
-                    player: Player {
-                        // varchar(128) -> String
-                        uuid: row.try_get("uuid")?,
-                        // varchar(30) -> String
-                        last_known_name: row.try_get("name")?,
-                    },
-                    // i32 -> u64
-                    vote_count: row.try_get::<i32, _>("vote_number")? as u64,
-                })
+        const SQL: &str = "SELECT playerdata.name, playerdata.uuid, vote_number From vote INNER JOIN playerdata ON vote.uuid = playerdata.uuid";
+
+        let query = sqlx::query::<MySql>(SQL).try_map(|row| {
+            Ok(PlayerVoteCount {
+                player: Player {
+                    // varchar(128) -> String
+                    uuid: row.try_get("uuid")?,
+                    // varchar(30) -> String
+                    last_known_name: row.try_get("name")?,
+                },
+                // i32 -> u64
+                vote_count: row.try_get::<i32, _>("vote_number")? as u64,
             })
-        ;
+        });
         self.fetch_all_with_timeout(query).await
     }
 }

@@ -48,8 +48,9 @@ pub struct SourceDatabaseConfig {
     ///
     /// どのクエリも `playerdata` を全件 SELECT するので、行数が増えても
     /// 正常系で打ち切られないよう既定値は 60 秒と長めにしている。
-    /// gRPC サーバー側のリクエストタイムアウト (`main.rs` の
-    /// `REQUEST_TIMEOUT`) より短くしておくこと。
+    /// これに接続取得の待ち時間 (5 秒) を足した値は、gRPC サーバー側の
+    /// リクエストタイムアウト (`main.rs` の `REQUEST_TIMEOUT`、90 秒) より
+    /// 短くなければならない (起動時に検査する)。
     #[serde(default = "default_query_timeout_secs")]
     pub query_timeout_secs: u64,
 }
