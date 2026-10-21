@@ -4,7 +4,7 @@ use crate::buf_generated::gigantic_minecraft::seichi_game_data::v1::{
     VoteCountsResponse, read_service_server::ReadService,
 };
 
-use domain::app_models::VecDataSource;
+use domain::app_models::{QueryTimeoutError, VecDataSource};
 use domain::models::{
     Player, PlayerBreakCount, PlayerBuildCount, PlayerLastQuit, PlayerPlayTicks, PlayerVoteCount,
 };
@@ -87,7 +87,17 @@ fn to_tonic_vote_counts_response(
 fn to_tonic_error_status(anyhow_error: anyhow::Error) -> tonic::Status {
     use tonic::*;
 
-    log::error!("Received an error from data source: {}", anyhow_error);
+    // `log` クレートのマクロはこのバイナリの subscriber (tracing) に橋渡しされて
+    // おらず出力されないので、`tracing` で出す。
+    if let Some(timeout) = anyhow_error.downcast_ref::<QueryTimeoutError>() {
+        tracing::error!(error = %timeout, "Query to data source timed out");
+
+        return Status::deadline_exceeded(
+            "Query to the data source timed out. See the server log for more details.",
+        );
+    }
+
+    tracing::error!(error = ?anyhow_error, "Received an error from data source");
 
     Status::unknown("Unknown error. See the server log for more details.")
 }
